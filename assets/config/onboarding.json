@@ -1,0 +1,402 @@
+{
+  "version": 1,
+  "languages": ["en", "ar"],
+  "steps": [
+    {
+      "id": "name",
+      "type": "text",
+      "input": "name",
+      "title": {
+        "en": "First things first. What should we call you?",
+        "ar": "لنبدأ بالتعارف. ما اسمكِ؟"
+      },
+      "subtitle": {
+        "en": "We'll use it to make your plan feel like yours.",
+        "ar": "سنستخدمه لنجعل خطتكِ خاصةً بكِ."
+      },
+      "placeholder": { "en": "Your first name", "ar": "اسمكِ الأول" }
+    },
+    {
+      "id": "goal",
+      "type": "single",
+      "title": {
+        "en": "Nice to meet you, {name}. What brings you here?",
+        "ar": "سعداء بلقائكِ يا {name}. ما الذي أتى بكِ إلى هنا؟"
+      },
+      "subtitle": {
+        "en": "Pick the one that matters most right now.",
+        "ar": "اختاري الأهم بالنسبة لكِ الآن."
+      },
+      "summaryLabel": { "en": "Goal", "ar": "الهدف" },
+      "options": [
+        { "id": "lose_weight", "label": { "en": "Lose weight", "ar": "خسارة الوزن" } },
+        {
+          "id": "feel_lighter",
+          "label": { "en": "Beat the bloat and feel lighter", "ar": "التخلّص من الانتفاخ والشعور بالخفّة" }
+        },
+        {
+          "id": "build_strength",
+          "label": { "en": "Tone up and get stronger", "ar": "شدّ الجسم وزيادة القوة" }
+        },
+        {
+          "id": "get_back_into_it",
+          "label": { "en": "Get back into training", "ar": "العودة إلى التمرين" }
+        }
+      ]
+    },
+    {
+      "id": "last_trained",
+      "type": "single",
+      "showIf": { "answer": "goal", "equals": "get_back_into_it" },
+      "title": {
+        "en": "How long since you last trained?",
+        "ar": "منذ متى توقّفتِ عن التمرين؟"
+      },
+      "subtitle": {
+        "en": "No judgement. We'll start from wherever you are.",
+        "ar": "بلا أحكام. سنبدأ من حيث أنتِ."
+      },
+      "summaryLabel": { "en": "Last trained", "ar": "آخر تمرين" },
+      "options": [
+        { "id": "few_weeks", "label": { "en": "A few weeks", "ar": "بضعة أسابيع" } },
+        { "id": "few_months", "label": { "en": "A few months", "ar": "بضعة أشهر" } },
+        { "id": "over_a_year", "label": { "en": "More than a year", "ar": "أكثر من سنة" } }
+      ]
+    },
+    {
+      "id": "stop_reason",
+      "type": "single",
+      "showIf": { "answer": "goal", "equals": "get_back_into_it" },
+      "title": { "en": "What made you stop?", "ar": "ما الذي جعلكِ تتوقّفين؟" },
+      "subtitle": {
+        "en": "It helps us shape your first few weeks.",
+        "ar": "يساعدنا ذلك في تصميم أسابيعكِ الأولى."
+      },
+      "summaryLabel": { "en": "Why you stopped", "ar": "سبب التوقّف" },
+      "options": [
+        { "id": "busy", "label": { "en": "Life got busy", "ar": "انشغلتُ بالحياة" } },
+        { "id": "injury", "label": { "en": "An injury", "ar": "إصابة" } },
+        { "id": "baby", "label": { "en": "I had a baby", "ar": "أنجبتُ طفلاً" } },
+        { "id": "motivation", "label": { "en": "I lost motivation", "ar": "فقدتُ الحماس" } }
+      ]
+    },
+    {
+      "id": "injury_areas",
+      "type": "multi",
+      "showIf": { "answer": "stop_reason", "equals": "injury" },
+      "title": {
+        "en": "Where did the injury affect you?",
+        "ar": "أين أثّرت الإصابة عليكِ؟"
+      },
+      "subtitle": { "en": "Choose all that apply.", "ar": "اختاري كل ما ينطبق عليكِ." },
+      "summaryLabel": { "en": "Go gently on", "ar": "مناطق تحتاج عناية" },
+      "options": [
+        { "id": "lower_back", "label": { "en": "Lower back", "ar": "أسفل الظهر" } },
+        { "id": "knees", "label": { "en": "Knees", "ar": "الركبتين" } },
+        { "id": "hips", "label": { "en": "Hips", "ar": "الوركين" } },
+        { "id": "shoulders", "label": { "en": "Shoulders", "ar": "الكتفين" } },
+        { "id": "neck", "label": { "en": "Neck", "ar": "الرقبة" } }
+      ]
+    },
+    {
+      "id": "injury_info",
+      "type": "info",
+      "icon": "shield",
+      "showIf": { "answer": "stop_reason", "equals": "injury" },
+      "title": {
+        "en": "We'll go gently on your {injury_areas}.",
+        "ar": "سنتعامل بلطف مع {injury_areas}."
+      },
+      "body": {
+        "en": "Every session in your plan comes with low-impact options, so you can rebuild strength without aggravating old injuries. If something hurts, skip it, and check with your doctor if you're unsure.",
+        "ar": "كل جلسة في خطتكِ تتضمّن خيارات منخفضة التأثير، لتستعيدي قوّتكِ دون أن تُجهدي الإصابات القديمة. إن شعرتِ بألم فتخطّي التمرين، واستشيري طبيبكِ إن لم تكوني متأكدة."
+      }
+    },
+    {
+      "id": "baby_info",
+      "type": "info",
+      "icon": "heart",
+      "showIf": { "answer": "stop_reason", "equals": "baby" },
+      "title": {
+        "en": "Congratulations! We'll start with your core.",
+        "ar": "مبارك! سنبدأ بتقوية عضلات الجذع."
+      },
+      "body": {
+        "en": "Your first weeks focus on breathing, deep core and pelvic floor work: the foundation everything else builds on. Get the all-clear from your doctor before you begin.",
+        "ar": "تركّز أسابيعكِ الأولى على التنفّس وعضلات الجذع العميقة وقاع الحوض، فهي الأساس لكل ما يأتي بعدها. احصلي على موافقة طبيبكِ قبل أن تبدئي."
+      }
+    },
+    {
+      "id": "lymph_info",
+      "type": "info",
+      "icon": "leaf",
+      "showIf": { "answer": "goal", "in": ["lose_weight", "feel_lighter"] },
+      "title": {
+        "en": "Feeling heavy isn't a willpower problem.",
+        "ar": "الشعور بالثقل ليس مشكلة في الإرادة."
+      },
+      "body": {
+        "en": "Bloating and puffiness often come from fluid your lymphatic system hasn't cleared yet. Our Pilates uses slow, flowing movement to help it along, so you finish a session feeling lighter, not wiped out.",
+        "ar": "غالباً ما يأتي الانتفاخ من سوائل لم يتخلّص منها الجهاز الليمفاوي بعد. يعتمد البيلاتس لدينا على حركات بطيئة ومتدفّقة تساعده على ذلك، لتُنهي جلستكِ وأنتِ تشعرين بالخفّة لا بالإرهاق."
+      }
+    },
+    {
+      "id": "current_training",
+      "type": "single",
+      "showIf": { "not": { "answer": "goal", "equals": "get_back_into_it" } },
+      "title": {
+        "en": "How often do you train right now?",
+        "ar": "كم مرة تتمرّنين حالياً؟"
+      },
+      "subtitle": {
+        "en": "Be honest. Your plan adapts either way.",
+        "ar": "كوني صريحة، فخطتكِ تتكيّف في كل الأحوال."
+      },
+      "summaryLabel": { "en": "Your routine", "ar": "روتينكِ الحالي" },
+      "options": [
+        { "id": "rarely", "label": { "en": "Rarely or never", "ar": "نادراً أو أبداً" } },
+        {
+          "id": "sometimes",
+          "label": { "en": "Once or twice a week", "ar": "مرة أو مرتين في الأسبوع" }
+        },
+        {
+          "id": "regularly",
+          "label": { "en": "Three times a week or more", "ar": "ثلاث مرات أسبوعياً أو أكثر" }
+        }
+      ]
+    },
+    {
+      "id": "days_per_week",
+      "type": "single",
+      "title": {
+        "en": "How many days a week feel realistic?",
+        "ar": "كم يوماً في الأسبوع يبدو واقعياً لكِ؟"
+      },
+      "subtitle": {
+        "en": "Consistency beats intensity. You can change this any time.",
+        "ar": "الاستمرارية أهم من الشدّة، ويمكنكِ تغيير ذلك في أي وقت."
+      },
+      "summaryLabel": { "en": "Training days", "ar": "أيام التمرين" },
+      "options": [
+        {
+          "id": "two",
+          "label": { "en": "2 days", "ar": "يومان" },
+          "description": { "en": "A gentle, sustainable start", "ar": "بداية لطيفة ومستدامة" }
+        },
+        {
+          "id": "three",
+          "label": { "en": "3 days", "ar": "3 أيام" },
+          "description": { "en": "The sweet spot for steady progress", "ar": "التوازن المثالي لتقدّم ثابت" }
+        },
+        {
+          "id": "four",
+          "label": { "en": "4 days", "ar": "4 أيام" },
+          "description": { "en": "For when you've got momentum", "ar": "عندما تكونين في أوج حماسكِ" },
+          "showIf": {
+            "any": [
+              { "answer": "current_training", "in": ["sometimes", "regularly"] },
+              { "answer": "last_trained", "equals": "few_weeks" }
+            ]
+          }
+        },
+        {
+          "id": "five",
+          "label": { "en": "5 days", "ar": "5 أيام" },
+          "description": { "en": "All in. You know your body.", "ar": "التزام كامل، فأنتِ تعرفين جسمكِ." },
+          "showIf": { "answer": "current_training", "equals": "regularly" }
+        }
+      ]
+    },
+    {
+      "id": "focus_areas",
+      "type": "multi",
+      "minSelected": 1,
+      "title": {
+        "en": "Which areas would you like to focus on?",
+        "ar": "على أي مناطق تودّين التركيز؟"
+      },
+      "subtitle": { "en": "Pick as many as you like.", "ar": "اختاري ما تشائين." },
+      "summaryLabel": { "en": "Focus areas", "ar": "مناطق التركيز" },
+      "options": [
+        { "id": "belly", "label": { "en": "Belly & waist", "ar": "البطن والخصر" } },
+        { "id": "legs", "label": { "en": "Legs & thighs", "ar": "الساقين والفخذين" } },
+        { "id": "glutes", "label": { "en": "Glutes", "ar": "الأرداف" } },
+        { "id": "arms", "label": { "en": "Arms", "ar": "الذراعين" } },
+        { "id": "posture", "label": { "en": "Posture & back", "ar": "القوام والظهر" } }
+      ]
+    },
+    {
+      "id": "session_length",
+      "type": "single",
+      "title": {
+        "en": "How long should a session be?",
+        "ar": "كم تريدين أن تكون مدة الجلسة؟"
+      },
+      "subtitle": {
+        "en": "Pick what fits a normal day, not your best one.",
+        "ar": "اختاري ما يناسب يومكِ العادي، لا يومكِ الأفضل."
+      },
+      "summaryLabel": { "en": "Session length", "ar": "مدة الجلسة" },
+      "options": [
+        {
+          "id": "ten",
+          "label": { "en": "10 minutes", "ar": "10 دقائق" },
+          "description": { "en": "Fits into any day", "ar": "تناسب أي يوم" }
+        },
+        {
+          "id": "twenty",
+          "label": { "en": "20 minutes", "ar": "20 دقيقة" },
+          "description": { "en": "The perfect balance", "ar": "التوازن المثالي" }
+        },
+        {
+          "id": "thirty",
+          "label": { "en": "30 minutes", "ar": "30 دقيقة" },
+          "description": { "en": "A full, focused workout", "ar": "تمرين كامل ومركّز" }
+        }
+      ]
+    },
+    {
+      "id": "email",
+      "type": "text",
+      "input": "email",
+      "title": {
+        "en": "Where should we send your plan, {name}?",
+        "ar": "إلى أين نرسل خطتكِ يا {name}؟"
+      },
+      "subtitle": {
+        "en": "We'll keep your plan safe so you never lose it. No spam, ever.",
+        "ar": "سنحفظ خطتكِ كي لا تضيع أبداً. بلا رسائل مزعجة."
+      },
+      "summaryLabel": { "en": "Email", "ar": "البريد الإلكتروني" },
+      "placeholder": { "en": "you@example.com", "ar": "you@example.com" }
+    }
+  ],
+  "plan": {
+    "titles": [
+      {
+        "when": { "answer": "goal", "equals": "lose_weight" },
+        "text": { "en": "{name}, your plan to lose weight", "ar": "{name}، هذه خطتكِ لخسارة الوزن" }
+      },
+      {
+        "when": { "answer": "goal", "equals": "feel_lighter" },
+        "text": { "en": "{name}, your plan to feel lighter", "ar": "{name}، هذه خطتكِ للشعور بالخفّة" }
+      },
+      {
+        "when": { "answer": "goal", "equals": "build_strength" },
+        "text": { "en": "{name}, your plan to get stronger", "ar": "{name}، هذه خطتكِ لتصبحي أقوى" }
+      },
+      {
+        "text": { "en": "{name}, your comeback plan", "ar": "{name}، هذه خطة عودتكِ" }
+      }
+    ],
+    "stats": [
+      {
+        "icon": "calendar",
+        "variants": [
+          { "text": { "en": "{days_per_week} a week", "ar": "{days_per_week} أسبوعياً" } }
+        ]
+      },
+      {
+        "icon": "timer",
+        "variants": [
+          { "text": { "en": "{session_length} per session", "ar": "{session_length} لكل جلسة" } }
+        ]
+      },
+      {
+        "icon": "intensity",
+        "variants": [
+          {
+            "when": {
+              "any": [
+                { "answer": "stop_reason", "in": ["injury", "baby"] },
+                { "answer": "last_trained", "equals": "over_a_year" },
+                { "answer": "current_training", "equals": "rarely" }
+              ]
+            },
+            "text": { "en": "Low impact", "ar": "منخفض التأثير" }
+          },
+          {
+            "when": { "answer": "current_training", "equals": "regularly" },
+            "text": { "en": "Challenging", "ar": "مستوى متقدّم" }
+          },
+          { "text": { "en": "Moderate", "ar": "مستوى متوسط" } }
+        ]
+      }
+    ],
+    "highlights": [
+      {
+        "when": { "answer": "goal", "in": ["lose_weight", "feel_lighter"] },
+        "icon": "leaf",
+        "title": { "en": "Lymphatic flow sessions", "ar": "جلسات التدفّق الليمفاوي" },
+        "body": {
+          "en": "Slow, flowing sequences to ease bloating and water retention.",
+          "ar": "تسلسلات بطيئة ومتدفّقة لتخفيف الانتفاخ واحتباس السوائل."
+        }
+      },
+      {
+        "when": { "answer": "goal", "equals": "build_strength" },
+        "icon": "bolt",
+        "title": { "en": "Strength that builds week by week", "ar": "قوة تتزايد أسبوعاً بعد أسبوع" },
+        "body": {
+          "en": "Each week adds a little more challenge, so you keep seeing progress.",
+          "ar": "كل أسبوع يضيف تحدّياً بسيطاً، لتلاحظي تقدّمكِ باستمرار."
+        }
+      },
+      {
+        "when": { "answer": "goal", "equals": "get_back_into_it" },
+        "icon": "refresh",
+        "title": { "en": "A gentle restart", "ar": "عودة لطيفة" },
+        "body": {
+          "en": "Week one is about rebuilding the habit, not testing your limits.",
+          "ar": "الأسبوع الأول لإعادة بناء العادة، لا لاختبار حدودكِ."
+        }
+      },
+      {
+        "when": { "answer": "stop_reason", "equals": "injury" },
+        "icon": "shield",
+        "title": { "en": "Kind to your {injury_areas}", "ar": "لطيفة مع {injury_areas}" },
+        "body": {
+          "en": "Low-impact alternatives for every move that loads those areas.",
+          "ar": "بدائل منخفضة التأثير لكل حركة تُجهد هذه المناطق."
+        }
+      },
+      {
+        "when": { "answer": "stop_reason", "equals": "baby" },
+        "icon": "heart",
+        "title": { "en": "Core and pelvic floor first", "ar": "الجذع وقاع الحوض أولاً" },
+        "body": {
+          "en": "Postnatal-friendly foundations before anything more intense.",
+          "ar": "أساسيات مناسبة لما بعد الولادة قبل أي تمرين أشدّ."
+        }
+      },
+      {
+        "icon": "target",
+        "title": { "en": "Extra focus: {focus_areas}", "ar": "تركيز إضافي: {focus_areas}" },
+        "body": {
+          "en": "Your sessions lean towards the areas you chose.",
+          "ar": "تميل جلساتكِ نحو المناطق التي اخترتِها."
+        }
+      }
+    ]
+  },
+  "paywall": {
+    "currency": "AED",
+    "defaultPlanId": "yearly",
+    "plans": [
+      {
+        "id": "yearly",
+        "title": { "en": "Yearly", "ar": "سنوي" },
+        "price": 349,
+        "billingMonths": 12,
+        "trialDays": 7,
+        "badge": { "en": "Best value", "ar": "الأفضل قيمة" }
+      },
+      {
+        "id": "monthly",
+        "title": { "en": "Monthly", "ar": "شهري" },
+        "price": 59,
+        "billingMonths": 1
+      }
+    ]
+  }
+}
