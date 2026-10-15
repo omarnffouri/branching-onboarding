@@ -34,7 +34,7 @@ abstract final class EmailAddress {
   ];
 
   /// Real domains that are one typo away from a common one. Never "fix" these.
-  static const _knownDomains = {
+  static const Set<String> _knownDomains = {
     ..._commonDomains,
     'mail.com',
     'ymail.com',

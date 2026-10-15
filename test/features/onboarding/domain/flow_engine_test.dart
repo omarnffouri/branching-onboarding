@@ -122,7 +122,7 @@ void main() {
         'goal': getBack,
         'last_trained': const ChoiceAnswer('few_months'),
         'stop_reason': const ChoiceAnswer('injury'),
-        'injury_areas': MultiChoiceAnswer(['knees']),
+        'injury_areas': MultiChoiceAnswer(const ['knees']),
         'injury_info': const Acknowledged(),
         'days_per_week': const ChoiceAnswer('two'),
       };
@@ -143,7 +143,7 @@ void main() {
         'goal': const ChoiceAnswer('build_strength'),
         'current_training': const ChoiceAnswer('regularly'),
         'days_per_week': const ChoiceAnswer('five'),
-        'focus_areas': MultiChoiceAnswer(['arms']),
+        'focus_areas': MultiChoiceAnswer(const ['arms']),
       };
       answers = engine.resolve(answers).answers;
       expect(answers, contains('days_per_week'));
@@ -156,7 +156,7 @@ void main() {
       );
 
       expect(answers, isNot(contains('days_per_week')));
-      expect(answers['focus_areas'], MultiChoiceAnswer(['arms']));
+      expect(answers['focus_areas'], MultiChoiceAnswer(const ['arms']));
     });
 
     test('a stale answer can never steer the flow', () {
@@ -172,7 +172,7 @@ void main() {
 
     test('an answer of the wrong shape is dropped', () {
       final resolution = engine.resolve({
-        'goal': MultiChoiceAnswer(['lose_weight']),
+        'goal': MultiChoiceAnswer(const ['lose_weight']),
         'email': const TextAnswer('not-an-email'),
       });
 
@@ -197,7 +197,7 @@ void main() {
         'name': name,
         'goal': getBack,
         'days_per_week': const ChoiceAnswer('two'),
-        'focus_areas': MultiChoiceAnswer(['belly']),
+        'focus_areas': MultiChoiceAnswer(const ['belly']),
         'session_length': const ChoiceAnswer('ten'),
         'email': const TextAnswer('layla@example.com'),
       });
@@ -210,7 +210,7 @@ void main() {
   group('AnswerFormatter', () {
     final answers = <String, Answer>{
       'name': name,
-      'focus_areas': MultiChoiceAnswer(['posture', 'belly', 'legs']),
+      'focus_areas': MultiChoiceAnswer(const ['posture', 'belly', 'legs']),
     };
 
     test('lists choices in config order, in each language', () {
