@@ -1,0 +1,11 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - lib/core/l10n/generated/**
+
+linter:
+  rules:
+    # This is an app, not a package: doc comments go where they explain a
+    # decision, not on every public member.
+    public_member_api_docs: false
