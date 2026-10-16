@@ -10,6 +10,16 @@ The flow is driven by one JSON file. Adding a question, a branch, or a piece of 
 
 ---
 
+## Screenshots
+
+Captured on the iPhone 17 Pro Max simulator.
+
+| Welcome | Goal selection | Waist measurement | Paywall |
+|:---:|:---:|:---:|:---:|
+| <img src="assets/screenshots/welcome.png" alt="Welcome screen with English and Arabic language controls" width="200"> | <img src="assets/screenshots/goal-selection.png" alt="Goal selection screen with four selectable options" width="200"> | <img src="assets/screenshots/waist-measurement.png" alt="Waist measurement screen with a draggable tape and skip link" width="200"> | <img src="assets/screenshots/paywall.png" alt="Paywall with yearly and monthly plans and a free trial timeline" width="200"> |
+
+---
+
 ## Quick start
 
 ```bash
