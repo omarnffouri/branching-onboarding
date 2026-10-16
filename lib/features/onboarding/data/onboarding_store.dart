@@ -1,19 +1,17 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:traininpink_onboarding/core/l10n/language_store.dart';
 
 /// Where onboarding progress and the chosen language survive app restarts.
 ///
 /// Deliberately dumb: it stores JSON, it does not know what an answer is.
 /// Turning state into JSON and back (and deciding what is still valid) is the
 /// controller's job, against the current config.
-abstract interface class OnboardingStore {
+abstract interface class OnboardingStore implements LanguageStore {
   Map<String, Object?>? readProgress();
   Future<void> writeProgress(Map<String, Object?> progress);
   Future<void> clearProgress();
-
-  String? readLanguage();
-  Future<void> writeLanguage(String languageCode);
 }
 
 final class SharedPreferencesOnboardingStore implements OnboardingStore {

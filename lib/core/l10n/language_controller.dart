@@ -1,7 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
+import 'package:traininpink_onboarding/core/analytics/analytics.dart';
+import 'package:traininpink_onboarding/core/l10n/language_store.dart';
 
 const supportedLanguages = ['en', 'ar'];
 
@@ -14,7 +15,7 @@ final languageProvider = NotifierProvider<LanguageController, String>(
 class LanguageController extends Notifier<String> {
   @override
   String build() {
-    final saved = ref.watch(onboardingStoreProvider).readLanguage();
+    final saved = ref.watch(languageStoreProvider).readLanguage();
     if (saved != null && supportedLanguages.contains(saved)) return saved;
     final device = PlatformDispatcher.instance.locale.languageCode;
     return supportedLanguages.contains(device) ? device : 'en';
@@ -25,8 +26,8 @@ class LanguageController extends Notifier<String> {
       return;
     }
     state = languageCode;
-    ref.read(onboardingStoreProvider).writeLanguage(languageCode).ignore();
-    ref.read(onboardingAnalyticsProvider)('language_changed', {
+    ref.read(languageStoreProvider).writeLanguage(languageCode).ignore();
+    ref.read(analyticsProvider)('language_changed', {
       'language': languageCode,
     });
   }

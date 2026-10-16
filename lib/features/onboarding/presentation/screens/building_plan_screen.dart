@@ -2,15 +2,14 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/flow_background.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
 import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/flow_background.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
-import 'package:traininpink_onboarding/features/onboarding/application/plan_summary.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
+import 'package:traininpink_onboarding/features/onboarding/domain/plan_summary.dart';
 
 /// The beat between her last answer and her plan.
 ///
@@ -35,8 +34,6 @@ class _BuildingPlanScreenState extends ConsumerState<BuildingPlanScreen>
     vsync: this,
     duration: const Duration(milliseconds: 2200),
   );
-  var _ready = false;
-  Timer? _finish;
 
   @override
   void didChangeDependencies() {
@@ -53,17 +50,13 @@ class _BuildingPlanScreenState extends ConsumerState<BuildingPlanScreen>
 
   void _onStatus(AnimationStatus status) {
     if (!status.isCompleted) return;
-    HapticFeedback.mediumImpact().ignore();
-    setState(() => _ready = true);
-    _finish = Timer(
-      const Duration(milliseconds: 750),
-      ref.read(onboardingControllerProvider.notifier).finishBuilding,
-    );
+    // The title switches to "ready" on its own: it is drawn from the
+    // progress, which is now complete.
+    ref.read(onboardingControllerProvider.notifier).planBuilt();
   }
 
   @override
   void dispose() {
-    _finish?.cancel();
     _progress.dispose();
     _wave.dispose();
     super.dispose();
@@ -108,8 +101,10 @@ class _BuildingPlanScreenState extends ConsumerState<BuildingPlanScreen>
                     AnimatedSwitcher(
                       duration: AppMotion.medium,
                       child: Text(
-                        _ready ? l10n.buildingReady : l10n.buildingTitle,
-                        key: ValueKey(_ready),
+                        _progress.isCompleted
+                            ? l10n.buildingReady
+                            : l10n.buildingTitle,
+                        key: ValueKey(_progress.isCompleted),
                         style: text.headlineSmall,
                         textAlign: TextAlign.center,
                       ),

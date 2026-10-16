@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pressable.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/pressable.dart';
 
 /// The EN | IT pill from the Traininpink welcome screen, as EN | ع.
 class LanguageToggle extends StatelessWidget {

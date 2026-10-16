@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/flow_progress_bar.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pressable.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/flow_progress_bar.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/pressable.dart';
 
 /// Back, progress and language, pinned above the questions.
 ///

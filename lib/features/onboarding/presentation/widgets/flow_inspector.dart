@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_state.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
@@ -88,7 +88,7 @@ class FlowInspector extends ConsumerWidget {
           const SizedBox(height: 16),
           Text(
             'Funnel events are logged to the console under '
-            '"onboarding.analytics".',
+            '"app.analytics".',
             style: text.bodySmall,
           ),
           const SizedBox(height: 16),

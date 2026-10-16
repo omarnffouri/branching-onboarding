@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 
 /// For moments rather than steps (building the plan, the plan, the welcome
 /// back after subscribing): a soft fade and settle instead of a slide.

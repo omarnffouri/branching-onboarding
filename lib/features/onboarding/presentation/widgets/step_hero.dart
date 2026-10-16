@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/app_assets.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/app_assets.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 
 /// The photo above a question, named by the step's `image` in the config.
 ///

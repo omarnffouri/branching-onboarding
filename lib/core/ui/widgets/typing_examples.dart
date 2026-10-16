@@ -23,13 +23,19 @@ class _TypingExamplesState extends State<TypingExamples> {
   var _example = 0;
   var _shown = 0;
   var _erasing = false;
-  var _still = false;
+
+  /// The text on screen; only the hint redraws as it types.
+  final ValueNotifier<String> _text = ValueNotifier('');
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _still = MediaQuery.disableAnimationsOf(context);
-    if (!_still && _timer == null) _schedule(const Duration(milliseconds: 500));
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _timer?.cancel();
+      _timer = null;
+    } else if (_timer == null) {
+      _schedule(const Duration(milliseconds: 500));
+    }
   }
 
   void _schedule(Duration delay) => _timer = Timer(delay, _tick);
@@ -37,18 +43,17 @@ class _TypingExamplesState extends State<TypingExamples> {
   void _tick() {
     if (!mounted) return;
     final length = widget.examples[_example].characters.length;
-    setState(() {
-      if (!_erasing && _shown < length) {
-        _shown++;
-      } else if (!_erasing) {
-        _erasing = true;
-      } else if (_shown > 0) {
-        _shown--;
-      } else {
-        _erasing = false;
-        _example = (_example + 1) % widget.examples.length;
-      }
-    });
+    if (!_erasing && _shown < length) {
+      _shown++;
+    } else if (!_erasing) {
+      _erasing = true;
+    } else if (_shown > 0) {
+      _shown--;
+    } else {
+      _erasing = false;
+      _example = (_example + 1) % widget.examples.length;
+    }
+    _text.value = widget.examples[_example].characters.take(_shown).toString();
     _schedule(switch ((_erasing, _shown)) {
       (false, final shown) when shown == length => const Duration(
         milliseconds: 1400,
@@ -62,16 +67,27 @@ class _TypingExamplesState extends State<TypingExamples> {
   @override
   void dispose() {
     _timer?.cancel();
+    _text.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final example = widget.examples[_example].characters;
-    return Text(
-      _still ? example.toString() : example.take(_shown).toString(),
-      style: widget.style,
-      maxLines: 1,
-    );
-  }
+  Widget build(BuildContext context) => MediaQuery.disableAnimationsOf(context)
+      ? Text(widget.examples[_example], style: widget.style, maxLines: 1)
+      : _TypedText(text: _text, style: widget.style);
+}
+
+/// The hint as typed so far, redrawn whenever it changes.
+class _TypedText extends AnimatedWidget {
+  const _TypedText({required ValueNotifier<String> text, required this.style})
+    : super(listenable: text);
+
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    (listenable as ValueNotifier<String>).value,
+    style: style,
+    maxLines: 1,
+  );
 }

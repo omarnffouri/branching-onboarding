@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 
 /// Fades and lifts [child] in as its page arrives, staggered by [index].
 ///

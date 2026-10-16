@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/app_assets.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/entrance.dart';
-import 'package:traininpink_onboarding/core/design/widgets/flow_background.dart';
+import 'package:traininpink_onboarding/core/ui/app_assets.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/entrance.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/flow_background.dart';
 import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/flow_points.dart';
 
 /// An info step with a photo, laid out like a magazine page: the photo

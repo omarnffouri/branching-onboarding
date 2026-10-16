@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:traininpink_onboarding/core/design/app_assets.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/entrance.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pressable.dart';
-import 'package:traininpink_onboarding/core/design/widgets/primary_button.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
 import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
+import 'package:traininpink_onboarding/core/ui/app_assets.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/entrance.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/pressable.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/primary_button.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/controllers/tape_step_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
@@ -39,11 +38,6 @@ class _TapeStepViewState extends ConsumerState<TapeStepView>
   /// Pixels of tape per unit (per cm), shared with the painter.
   static const _spacing = 18.0;
 
-  late double _value = ref
-      .read(tapeStepControllerProvider(widget.step.id))
-      .value
-      .toDouble();
-  late int _shown = _value.round();
   late final AnimationController _snap;
 
   NumberStep get _step => widget.step;
@@ -57,7 +51,7 @@ class _TapeStepViewState extends ConsumerState<TapeStepView>
     // Created up front, not lazily: a page she never drags must not create
     // its animation for the first time while being disposed.
     _snap = AnimationController.unbounded(vsync: this)
-      ..addListener(() => _setValue(_snap.value));
+      ..addListener(() => _page.moveTo(_snap.value));
   }
 
   @override
@@ -66,57 +60,30 @@ class _TapeStepViewState extends ConsumerState<TapeStepView>
     super.dispose();
   }
 
-  void _setValue(double value) {
-    // Fractional while dragging, but never outside the step's range.
-    setState(
-      () => _value = value.clamp(_step.min.toDouble(), _step.max.toDouble()),
-    );
-    final rounded = _value.round();
-    if (rounded != _shown) {
-      _shown = rounded;
-      HapticFeedback.selectionClick().ignore();
-    }
-  }
-
   void _onDrag(DragUpdateDetails details) {
     _snap.stop();
     final direction = Directionality.of(context) == TextDirection.rtl ? -1 : 1;
     // Dragging left reveals higher numbers, like pulling a real tape.
-    _setValue(_value - direction * details.delta.dx / _spacing);
+    _page.dragBy(-direction * details.delta.dx / _spacing);
   }
 
   void _onDragEnd(DragEndDetails details) {
-    final target = _value.round().toDouble();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _setValue(target);
-    } else {
-      _snap
-        ..value = _value
-        ..animateTo(
-          target,
-          duration: AppMotion.medium,
-          curve: AppMotion.emphasized,
-        ).ignore();
-    }
-    _page.record(target);
+    final instant = MediaQuery.disableAnimationsOf(context);
+    final from = ref.read(tapeStepControllerProvider(widget.step.id)).position;
+    final target = _page.settle(instant: instant);
+    if (instant) return;
+    _snap
+      ..value = from
+      ..animateTo(
+        target,
+        duration: AppMotion.medium,
+        curve: AppMotion.emphasized,
+      ).ignore();
   }
-
-  void _nudge(int delta) {
-    _setValue((_value.round() + delta).toDouble());
-    _page.record(_value);
-  }
-
-  void _submit() => _page.submit(_value);
 
   void _skip() {
     _snap.stop();
     _page.skip();
-    // The page stays alive behind the next one: reset its preview now.
-    setState(() {
-      _value = ref.read(tapeStepControllerProvider(_step.id)).value.toDouble();
-      _shown = _value.round();
-    });
-    HapticFeedback.lightImpact().ignore();
   }
 
   @override
@@ -129,6 +96,7 @@ class _TapeStepViewState extends ConsumerState<TapeStepView>
     final answers = ref.watch(
       onboardingControllerProvider.select((state) => state.answers),
     );
+    final page = ref.watch(tapeStepControllerProvider(step.id));
     final unit = step.unit.resolve(language);
     final size = MediaQuery.sizeOf(context);
 
@@ -143,11 +111,11 @@ class _TapeStepViewState extends ConsumerState<TapeStepView>
       body: Semantics(
         slider: true,
         label: formatter.fill(step.title, answers),
-        value: '$_shown $unit',
-        increasedValue: '${_shown + 1} $unit',
-        decreasedValue: '${_shown - 1} $unit',
-        onIncrease: () => _nudge(1),
-        onDecrease: () => _nudge(-1),
+        value: '${page.shown} $unit',
+        increasedValue: '${page.shown + 1} $unit',
+        decreasedValue: '${page.shown - 1} $unit',
+        onIncrease: () => _page.nudge(1),
+        onDecrease: () => _page.nudge(-1),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onHorizontalDragUpdate: _onDrag,
@@ -197,7 +165,7 @@ class _TapeStepViewState extends ConsumerState<TapeStepView>
               Entrance(
                 index: 2,
                 child: MeasuringTape(
-                  value: _value,
+                  value: page.position,
                   min: step.min,
                   max: step.max,
                   spacing: _spacing,
@@ -228,7 +196,7 @@ class _TapeStepViewState extends ConsumerState<TapeStepView>
                             textBaseline: TextBaseline.alphabetic,
                             children: [
                               Text(
-                                '$_shown',
+                                '${page.shown}',
                                 style: text.displaySmall!.copyWith(
                                   fontFamily: 'Poppins',
                                   fontSize: 56,
@@ -285,7 +253,7 @@ class _TapeStepViewState extends ConsumerState<TapeStepView>
                     const SizedBox(height: AppSpacing.lg),
                     PrimaryButton(
                       label: l10n.continueButton,
-                      onPressed: _submit,
+                      onPressed: _page.submit,
                     ),
                     const SizedBox(height: 60),
                   ],

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 
 /// "Welcome back, Layla": shown once when she reopens the app mid-flow, so
 /// landing on question five feels intentional rather than confusing.

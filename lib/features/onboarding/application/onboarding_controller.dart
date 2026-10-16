@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:traininpink_onboarding/features/onboarding/application/onboarding_analytics.dart';
+import 'package:traininpink_onboarding/core/analytics/analytics.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_state.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/step_group.dart';
@@ -29,14 +30,14 @@ class OnboardingController extends Notifier<OnboardingState> {
   late FlowConfig _config;
   late FlowEngine _engine;
   late OnboardingStore _store;
-  late OnboardingAnalytics _analytics;
+  late Analytics _analytics;
 
   @override
   OnboardingState build() {
     _config = ref.watch(flowConfigProvider);
     _engine = FlowEngine(_config);
     _store = ref.watch(onboardingStoreProvider);
-    _analytics = ref.watch(onboardingAnalyticsProvider);
+    _analytics = ref.watch(analyticsProvider);
 
     final saved = _store.readProgress();
     final restored = saved == null
@@ -214,6 +215,16 @@ class OnboardingController extends Notifier<OnboardingState> {
   }
 
   // -- Plan and paywall ------------------------------------------------------
+
+  /// The "building your plan" fill reached 100%: a firm tap, then the plan
+  /// after a short beat so she sees "ready".
+  void planBuilt() {
+    if (state.stage != OnboardingStage.building) return;
+    HapticFeedback.mediumImpact().ignore();
+    Timer(const Duration(milliseconds: 750), () {
+      if (ref.mounted) finishBuilding();
+    });
+  }
 
   void finishBuilding() {
     if (state.stage != OnboardingStage.building) return;

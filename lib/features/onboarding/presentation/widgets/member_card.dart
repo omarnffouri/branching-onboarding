@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/flow_background.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/flow_background.dart';
 
 /// Her Traininpink member card.
 ///

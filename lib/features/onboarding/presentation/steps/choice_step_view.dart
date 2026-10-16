@@ -1,17 +1,15 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/choice_card.dart';
-import 'package:traininpink_onboarding/core/design/widgets/entrance.dart';
-import 'package:traininpink_onboarding/core/design/widgets/primary_button.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
 import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/choice_card.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/entrance.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/primary_button.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/controllers/choice_step_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
-import 'package:traininpink_onboarding/features/onboarding/application/onboarding_state.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
 import 'package:traininpink_onboarding/features/onboarding/presentation/steps/step_layout.dart';
@@ -21,99 +19,39 @@ import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/
 /// Single choice moves on by itself a beat after she taps, like the
 /// Traininpink app. Multi choice waits for Continue.
 ///
-/// The logic lives in ChoiceStepController; this keeps only what belongs
-/// to the screen: the short delay before moving on, and whether to show
-/// Continue for an answer she already gave.
-class ChoiceStepView extends ConsumerStatefulWidget {
+/// Everything lives in ChoiceStepController, including the beat before a
+/// single choice moves on; this only lays the page out.
+class ChoiceStepView extends ConsumerWidget {
   const ChoiceStepView({required this.step, super.key});
 
   final ChoiceStep step;
 
   @override
-  ConsumerState<ChoiceStepView> createState() => _ChoiceStepViewState();
-}
-
-class _ChoiceStepViewState extends ConsumerState<ChoiceStepView> {
-  Timer? _advance;
-  late bool _showContinue = _isAnswered(
-    ref.read(onboardingControllerProvider),
-  );
-  ProviderSubscription<OnboardingState>? _subscription;
-
-  ChoiceStep get _step => widget.step;
-
-  ChoiceStepController get _page =>
-      ref.read(choiceStepControllerProvider(_step.id).notifier);
-
-  @override
-  void initState() {
-    super.initState();
-    _subscription = ref.listenManual(onboardingControllerProvider, _onFlow);
-  }
-
-  @override
-  void dispose() {
-    _advance?.cancel();
-    _subscription?.close();
-    super.dispose();
-  }
-
-  bool _isAnswered(OnboardingState state) =>
-      state.resolution.isAnswered(_step.id);
-
-  bool _isCurrent(OnboardingState? state) =>
-      state?.stage == OnboardingStage.questions &&
-      state?.currentStepId == _step.id;
-
-  /// This page stays alive behind later pages: cancel the pending advance
-  /// when it's left, and offer Continue when she comes back to an answer.
-  void _onFlow(OnboardingState? previous, OnboardingState next) {
-    final current = _isCurrent(next);
-    if (!current) _advance?.cancel();
-    if (current && !_isCurrent(previous) && _isAnswered(next)) {
-      setState(() => _showContinue = true);
-    }
-  }
-
-  void _select(ChoiceOption option) {
-    if (!_page.select(option)) return;
-    if (_step is SingleChoiceStep) {
-      _advance?.cancel();
-      _advance = Timer(
-        MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : AppMotion.selectionBeat,
-        _continue,
-      );
-    }
-  }
-
-  void _continue() {
-    _advance?.cancel();
-    _page.continueStep();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final language = ref.watch(languageProvider);
     final formatter = ref.watch(answerFormatterProvider);
     final answers = ref.watch(
       onboardingControllerProvider.select((state) => state.answers),
     );
-    final page = ref.watch(choiceStepControllerProvider(_step.id));
+    final page = ref.watch(choiceStepControllerProvider(step.id));
+    final controller = ref.read(choiceStepControllerProvider(step.id).notifier);
+    void select(ChoiceOption option) => controller.select(
+      option,
+      instant: MediaQuery.disableAnimationsOf(context),
+    );
 
     return StepLayout(
-      hero: switch (_step.image) {
+      hero: switch (step.image) {
         final image? when !page.usesBodyMap => StepHero(
           image: image,
-          focus: Alignment(_step.imageFocus.x, _step.imageFocus.y),
+          focus: Alignment(step.imageFocus.x, step.imageFocus.y),
         ),
         _ => null,
       },
-      title: formatter.fill(_step.title, answers),
-      subtitle: _step.subtitle?.resolve(language),
-      footer: page.isMulti || _showContinue
+      title: formatter.fill(step.title, answers),
+      subtitle: step.subtitle?.resolve(language),
+      footer: page.isMulti || page.showContinue
           ? Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -132,7 +70,7 @@ class _ChoiceStepViewState extends ConsumerState<ChoiceStepView> {
                   ),
                 PrimaryButton(
                   label: l10n.continueButton,
-                  onPressed: page.canContinue ? _continue : null,
+                  onPressed: page.canContinue ? controller.continueStep : null,
                 ),
               ],
             )
@@ -146,7 +84,9 @@ class _ChoiceStepViewState extends ConsumerState<ChoiceStepView> {
               selected: page.selectedIds,
               labelOf: (option) => option.label.resolve(language),
               height: math.min(340, MediaQuery.sizeOf(context).height * 0.38),
-              onToggle: _select,
+              side: page.bodySide,
+              onTurn: controller.turnTo,
+              onToggle: select,
             ),
           )
         else
@@ -160,7 +100,7 @@ class _ChoiceStepViewState extends ConsumerState<ChoiceStepView> {
                   description: option.description?.resolve(language),
                   selected: page.isSelected(option),
                   multiSelect: page.isMulti,
-                  onTap: () => _select(option),
+                  onTap: () => select(option),
                 ),
               ),
             ),

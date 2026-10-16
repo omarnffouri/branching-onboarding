@@ -2,29 +2,24 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pressable.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/segmented_toggle.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/select_chip.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
-
-enum BodySide { front, back }
-
-extension on BodyRegion {
-  /// Arms and legs read from both sides; the rest belong to one.
-  bool visibleOn(BodySide side) => switch (this) {
-    BodyRegion.belly => side == BodySide.front,
-    BodyRegion.back || BodyRegion.glutes => side == BodySide.back,
-    BodyRegion.arms || BodyRegion.legs => true,
-  };
-}
 
 /// Focus areas picked on a figure she can turn around, with the same
 /// options as chips underneath. The chips are the accessible, precise way
 /// in; the figure is the quick, personal one. Both stay in sync.
+///
+/// Which side she faces is the page's state ([side], [onTurn]); this widget
+/// only draws it and animates the turn.
 class BodyMap extends StatefulWidget {
   const BodyMap({
     required this.options,
     required this.selected,
+    required this.side,
+    required this.onTurn,
     required this.onToggle,
     required this.labelOf,
     required this.height,
@@ -34,6 +29,8 @@ class BodyMap extends StatefulWidget {
   /// Every option has a region; the config validator guarantees it.
   final List<ChoiceOption> options;
   final Set<String> selected;
+  final BodySide side;
+  final ValueChanged<BodySide> onTurn;
   final ValueChanged<ChoiceOption> onToggle;
   final String Function(ChoiceOption option) labelOf;
   final double height;
@@ -45,7 +42,6 @@ class BodyMap extends StatefulWidget {
 class _BodyMapState extends State<BodyMap> with TickerProviderStateMixin {
   late final AnimationController _flip;
   late final Map<BodyRegion, AnimationController> _fills;
-  BodySide _side = BodySide.front;
   Set<BodyRegion> get _selectedRegions => {
     for (final option in widget.options)
       if (widget.selected.contains(option.id)) ?option.region,
@@ -57,7 +53,10 @@ class _BodyMapState extends State<BodyMap> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _flip = AnimationController(vsync: this);
+    _flip = AnimationController(
+      vsync: this,
+      value: widget.side == BodySide.back ? 1 : 0,
+    );
     final selected = _selectedRegions;
     _fills = {
       for (final region in BodyRegion.values)
@@ -71,6 +70,15 @@ class _BodyMapState extends State<BodyMap> with TickerProviderStateMixin {
   @override
   void didUpdateWidget(BodyMap oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.side != oldWidget.side) {
+      _flip
+          .animateTo(
+            widget.side == BodySide.back ? 1 : 0,
+            duration: _duration(AppMotion.slow),
+            curve: Curves.easeInOutCubic,
+          )
+          .ignore();
+    }
     final selected = _selectedRegions;
     for (final MapEntry(key: region, value: fill) in _fills.entries) {
       fill
@@ -92,27 +100,6 @@ class _BodyMapState extends State<BodyMap> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _turnTo(BodySide side) {
-    if (_side == side) return;
-    setState(() => _side = side);
-    _flip
-        .animateTo(
-          side == BodySide.back ? 1 : 0,
-          duration: _duration(AppMotion.slow),
-          curve: Curves.easeInOutCubic,
-        )
-        .ignore();
-  }
-
-  /// Picking an area she can't see turns the figure so it lands in view.
-  void _toggle(ChoiceOption option) {
-    final region = option.region!;
-    if (!widget.selected.contains(option.id) && !region.visibleOn(_side)) {
-      _turnTo(_side == BodySide.front ? BodySide.back : BodySide.front);
-    }
-    widget.onToggle(option);
-  }
-
   void _onFigureTap(TapUpDetails details, Size size) {
     if (_flip.isAnimating) return;
     final scale = math.min(
@@ -124,12 +111,12 @@ class _BodyMapState extends State<BodyMap> with TickerProviderStateMixin {
       (size.height - _Figure.size.height * scale) / 2,
     );
     final point = (details.localPosition - origin) / scale;
-    final region = _Figure.of(_side).regionAt(point);
+    final region = _Figure.of(widget.side).regionAt(point);
     if (region == null) return;
     for (final option in widget.options) {
       if (option.region == region) {
         HapticFeedback.selectionClick().ignore();
-        _toggle(option);
+        widget.onToggle(option);
         return;
       }
     }
@@ -141,7 +128,14 @@ class _BodyMapState extends State<BodyMap> with TickerProviderStateMixin {
     final offered = {for (final option in widget.options) ?option.region};
     return Column(
       children: [
-        _SideToggle(side: _side, l10n: l10n, onChanged: _turnTo),
+        SegmentedToggle(
+          options: {
+            BodySide.front: l10n.bodyFront,
+            BodySide.back: l10n.bodyBack,
+          },
+          selected: widget.side,
+          onChanged: widget.onTurn,
+        ),
         const SizedBox(height: AppSpacing.md),
         ExcludeSemantics(
           child: SizedBox(
@@ -191,134 +185,17 @@ class _BodyMapState extends State<BodyMap> with TickerProviderStateMixin {
           runSpacing: AppSpacing.sm,
           children: [
             for (final option in widget.options)
-              _AreaChip(
+              SelectChip(
                 key: ValueKey('body-chip:${option.id}'),
                 label: widget.labelOf(option),
                 selected: widget.selected.contains(option.id),
-                onTap: () => _toggle(option),
+                onTap: () => widget.onToggle(option),
               ),
           ],
         ),
       ],
     );
   }
-}
-
-class _SideToggle extends StatelessWidget {
-  const _SideToggle({
-    required this.side,
-    required this.l10n,
-    required this.onChanged,
-  });
-
-  final BodySide side;
-  final AppLocalizations l10n;
-  final ValueChanged<BodySide> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    Widget segment(BodySide value, String label) {
-      final selected = side == value;
-      return Semantics(
-        button: true,
-        selected: selected,
-        inMutuallyExclusiveGroup: true,
-        child: Pressable(
-          onTap: () => onChanged(value),
-          child: AnimatedContainer(
-            duration: AppMotion.medium,
-            curve: AppMotion.standard,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            decoration: BoxDecoration(
-              color: selected ? AppColors.surface : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-              boxShadow: selected ? AppShadows.card : null,
-            ),
-            child: Text(
-              label,
-              style: text.labelLarge!.copyWith(
-                color: selected ? AppColors.primaryDeep : AppColors.inkMuted,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: AppColors.track,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          segment(BodySide.front, l10n.bodyFront),
-          segment(BodySide.back, l10n.bodyBack),
-        ],
-      ),
-    );
-  }
-}
-
-class _AreaChip extends StatelessWidget {
-  const _AreaChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    super.key,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    checked: selected,
-    child: Pressable(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppMotion.medium,
-        curve: AppMotion.standard,
-        constraints: const BoxConstraints(minHeight: 44),
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 16, 10),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.blush : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-            width: 1.5,
-          ),
-          boxShadow: AppShadows.card,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: AppMotion.fast,
-              child: Icon(
-                selected ? Icons.check_rounded : Icons.add_rounded,
-                key: ValueKey(selected),
-                size: 18,
-                color: selected ? AppColors.primary : AppColors.primarySoft,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                color: selected ? AppColors.primaryDeep : AppColors.ink,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 /// A tappable piece of a region: the shape where it overlaps the band.

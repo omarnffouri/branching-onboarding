@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:traininpink_onboarding/core/analytics/analytics.dart';
+import 'package:traininpink_onboarding/core/l10n/language_store.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/data/onboarding_store.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
@@ -40,7 +42,8 @@ ProviderContainer createContainer({
     overrides: [
       flowConfigProvider.overrideWithValue(config ?? loadBundledConfig()),
       onboardingStoreProvider.overrideWithValue(store),
-      onboardingAnalyticsProvider.overrideWithValue(
+      languageStoreProvider.overrideWithValue(store),
+      analyticsProvider.overrideWithValue(
         (event, properties) =>
             events?.add((event: event, properties: properties)),
       ),

@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pressable.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/pressable.dart';
 
 /// A tactile number with one continuous ribbon that opens as her pace grows.
 class RhythmPicker extends StatefulWidget {

@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
-import 'package:traininpink_onboarding/features/onboarding/application/onboarding_analytics.dart';
 import 'package:traininpink_onboarding/features/onboarding/data/onboarding_store.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/answer_formatter.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
@@ -13,10 +12,6 @@ final flowConfigProvider = Provider<FlowConfig>(
 
 final onboardingStoreProvider = Provider<OnboardingStore>(
   (ref) => throw UnimplementedError('Override onboardingStoreProvider in main'),
-);
-
-final onboardingAnalyticsProvider = Provider<OnboardingAnalytics>(
-  (ref) => logAnalyticsEvent,
 );
 
 /// Fills `{step}` placeholders in config copy, in the current language.

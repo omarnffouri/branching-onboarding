@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 
 /// Fades a cream veil in behind the status bar once [child] scrolls past
 /// [showAfter], so text never collides with the clock and battery, while a
@@ -21,7 +21,15 @@ class StatusBarScrim extends StatefulWidget {
 
 class _StatusBarScrimState extends State<StatusBarScrim> {
   static const _fadeDistance = 48.0;
-  var _opacity = 0.0;
+
+  /// Only the veil repaints as she scrolls; the page itself never rebuilds.
+  final ValueNotifier<double> _opacity = ValueNotifier(0);
+
+  @override
+  void dispose() {
+    _opacity.dispose();
+    super.dispose();
+  }
 
   bool _onScroll(ScrollNotification notification) {
     if (notification.depth != 0) return false;
@@ -29,7 +37,7 @@ class _StatusBarScrimState extends State<StatusBarScrim> {
         ((notification.metrics.pixels - widget.showAfter + _fadeDistance) /
                 _fadeDistance)
             .clamp(0.0, 1.0);
-    if (opacity != _opacity) setState(() => _opacity = opacity);
+    _opacity.value = opacity;
     return false;
   }
 
@@ -46,24 +54,31 @@ class _StatusBarScrimState extends State<StatusBarScrim> {
             left: 0,
             right: 0,
             height: top + 20,
-            child: IgnorePointer(
-              child: Opacity(
-                opacity: _opacity,
-                child: const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: [0.7, 1],
-                      colors: [AppColors.background, Color(0x00FFF7F7)],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            child: IgnorePointer(child: _Veil(opacity: _opacity)),
           ),
         ],
       ),
     );
   }
+}
+
+/// The cream gradient, redrawn whenever its opacity changes.
+class _Veil extends AnimatedWidget {
+  const _Veil({required ValueNotifier<double> opacity})
+    : super(listenable: opacity);
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+    opacity: (listenable as ValueNotifier<double>).value,
+    child: const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: [0.7, 1],
+          colors: [AppColors.background, Color(0x00FFF7F7)],
+        ),
+      ),
+    ),
+  );
 }

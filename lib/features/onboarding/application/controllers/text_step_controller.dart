@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show FocusNode, TextEditingController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show NotifierProviderFamily;
 import 'package:meta/meta.dart';
@@ -14,6 +16,7 @@ final class TextStepState {
     required this.kind,
     required this.input,
     this.submitted = false,
+    this.rejections = 0,
   });
 
   final TextInputKind kind;
@@ -24,14 +27,19 @@ final class TextStepState {
   /// She tried to continue with an invalid value and hasn't fixed it yet.
   final bool submitted;
 
+  /// How many times Continue was refused; the page shakes on each one.
+  final int rejections;
+
   TextFieldStatus get status =>
       TextFieldStatus.of(kind, input, submitted: submitted);
 
-  TextStepState copyWith({String? input, bool? submitted}) => TextStepState(
-    kind: kind,
-    input: input ?? this.input,
-    submitted: submitted ?? this.submitted,
-  );
+  TextStepState copyWith({String? input, bool? submitted, int? rejections}) =>
+      TextStepState(
+        kind: kind,
+        input: input ?? this.input,
+        submitted: submitted ?? this.submitted,
+        rejections: rejections ?? this.rejections,
+      );
 }
 
 /// One per free-text step (her name, her email), keyed by step id.
@@ -42,7 +50,8 @@ textStepControllerProvider = NotifierProvider.autoDispose
     );
 
 /// The logic of a free-text page: keep what she typed, save it when valid,
-/// and only move on with a valid answer.
+/// and only move on with a valid answer. It also owns the text box's
+/// contents and focus, so the page only lays them out.
 class TextStepController extends Notifier<TextStepState> {
   TextStepController(this.stepId);
 
@@ -51,17 +60,27 @@ class TextStepController extends Notifier<TextStepState> {
   OnboardingController get _flow =>
       ref.read(onboardingControllerProvider.notifier);
 
+  /// What is in the text box. Coming back shows what she typed before.
+  late TextEditingController field;
+
+  /// The text box's focus; the page raises the keyboard with it.
+  late FocusNode focus;
+
   @override
   TextStepState build() {
     final step = ref.read(flowConfigProvider).stepById(stepId);
     if (step is! TextInputStep) {
       throw ArgumentError.value(stepId, 'stepId', 'is not a text step');
     }
-    return TextStepState(
-      kind: step.kind,
-      // Coming back shows what she typed before.
-      input: ref.read(onboardingControllerProvider).textAnswerOf(stepId),
-    );
+    final input = ref.read(onboardingControllerProvider).textAnswerOf(stepId);
+    field = TextEditingController(text: input);
+    focus = FocusNode();
+    final (ownField, ownFocus) = (field, focus);
+    ref.onDispose(() {
+      ownField.dispose();
+      ownFocus.dispose();
+    });
+    return TextStepState(kind: step.kind, input: input);
   }
 
   /// She typed. What is in the field is the truth: an invalid value clears
@@ -73,11 +92,21 @@ class TextStepController extends Notifier<TextStepState> {
     state = next.status.isValid ? next.copyWith(submitted: false) : next;
   }
 
-  /// She tapped Continue. Returns false when the value is rejected, so the
-  /// page can explain why.
+  /// She tapped Continue. Returns false when the value is rejected: a firm
+  /// nudge, and the page shakes and explains why.
   bool submit() {
     if (_flow.submit(stepId, TextAnswer(state.status.value))) return true;
-    state = state.copyWith(submitted: true);
+    HapticFeedback.mediumImpact().ignore();
+    state = state.copyWith(submitted: true, rejections: state.rejections + 1);
     return false;
+  }
+
+  /// She tapped the typo fix (`gmial.com` → `gmail.com`).
+  void applySuggestion(String suggestion) {
+    field
+      ..text = suggestion
+      ..selection = TextSelection.collapsed(offset: suggestion.length);
+    changed(suggestion);
+    HapticFeedback.selectionClick().ignore();
   }
 }

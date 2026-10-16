@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 
 /// A CTA that stays put while the content scrolls under a soft fade.
 class PinnedFooter extends StatelessWidget {

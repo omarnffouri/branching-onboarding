@@ -77,9 +77,20 @@ void main() {
       expect(answers()['days_per_week'], const NumberAnswer(3));
     });
 
-    test('above the limit it is refused', () {
+    test('above the limit it is refused, and the page explains why', () {
       expect(controller().setCount(4), FrequencyChange.overLimit);
       expect(answers()['days_per_week'], const NumberAnswer(2));
+      expect(week().atLimit, isTrue);
+
+      controller().setCount(3);
+      expect(week().atLimit, isFalse);
+    });
+
+    test('picking a routine clears the limit message', () {
+      controller().setCount(4);
+      controller().selectRoutine(routine(), option('rarely'));
+
+      expect(week().atLimit, isFalse);
     });
 
     test('below the minimum, or the same count, nothing happens', () {

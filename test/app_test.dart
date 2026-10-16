@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:traininpink_onboarding/app.dart';
+import 'package:traininpink_onboarding/core/analytics/analytics.dart';
+import 'package:traininpink_onboarding/core/l10n/language_store.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
 import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/config_icons.dart';
@@ -20,7 +22,8 @@ void main() {
           overrides: [
             flowConfigProvider.overrideWithValue(config),
             onboardingStoreProvider.overrideWithValue(store),
-            onboardingAnalyticsProvider.overrideWithValue((_, _) {}),
+            languageStoreProvider.overrideWithValue(store),
+            analyticsProvider.overrideWithValue((_, _) {}),
           ],
           child: const TraininpinkApp(),
         ),

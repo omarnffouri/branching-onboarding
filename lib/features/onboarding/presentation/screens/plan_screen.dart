@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:traininpink_onboarding/core/design/app_assets.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/entrance.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pinned_footer.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pressable.dart';
-import 'package:traininpink_onboarding/core/design/widgets/primary_button.dart';
-import 'package:traininpink_onboarding/core/design/widgets/status_bar_scrim.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
 import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
+import 'package:traininpink_onboarding/core/ui/app_assets.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/entrance.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/pinned_footer.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/pressable.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/primary_button.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/status_bar_scrim.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
-import 'package:traininpink_onboarding/features/onboarding/application/plan_summary.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
+import 'package:traininpink_onboarding/features/onboarding/domain/plan_summary.dart';
 import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/config_icons.dart';
 
 /// Her plan: built from the path she took, and editable in place. Tapping

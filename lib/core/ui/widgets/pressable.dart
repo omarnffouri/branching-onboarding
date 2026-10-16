@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 
 enum PressHaptic { none, selection, light, medium }
 
@@ -26,11 +26,33 @@ class Pressable extends StatefulWidget {
   State<Pressable> createState() => _PressableState();
 }
 
-class _PressableState extends State<Pressable> {
-  var _pressed = false;
+class _PressableState extends State<Pressable>
+    with SingleTickerProviderStateMixin {
+  // The press is an animation, not state: it scales the child without
+  // rebuilding it.
+  late final _press = AnimationController(
+    vsync: this,
+    duration: AppMotion.fast,
+  );
+  late final Animation<double> _scale = _press.drive(
+    Tween<double>(
+      begin: 1,
+      end: widget.pressedScale,
+    ).chain(CurveTween(curve: AppMotion.standard)),
+  );
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
 
   void _setPressed(bool pressed) {
-    if (_pressed != pressed) setState(() => _pressed = pressed);
+    if (pressed) {
+      _press.forward().ignore();
+    } else {
+      _press.reverse().ignore();
+    }
   }
 
   void _handleTap() {
@@ -57,12 +79,7 @@ class _PressableState extends State<Pressable> {
       onTapCancel: enabled ? () => _setPressed(false) : null,
       onTap: enabled ? _handleTap : null,
       onLongPress: widget.onLongPress,
-      child: AnimatedScale(
-        scale: _pressed ? widget.pressedScale : 1,
-        duration: AppMotion.fast,
-        curve: AppMotion.standard,
-        child: widget.child,
-      ),
+      child: ScaleTransition(scale: _scale, child: widget.child),
     );
   }
 }

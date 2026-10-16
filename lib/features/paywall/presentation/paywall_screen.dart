@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:traininpink_onboarding/core/design/app_assets.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/choice_card.dart';
-import 'package:traininpink_onboarding/core/design/widgets/entrance.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pinned_footer.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pressable.dart';
-import 'package:traininpink_onboarding/core/design/widgets/primary_button.dart';
-import 'package:traininpink_onboarding/core/design/widgets/status_bar_scrim.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
+import 'package:traininpink_onboarding/core/ui/app_assets.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/choice_card.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/entrance.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/pinned_footer.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/pressable.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/primary_button.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/status_bar_scrim.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
@@ -114,7 +114,7 @@ class PaywallScreen extends ConsumerWidget {
                               child: _PlanOption(
                                 plan: plan,
                                 selected: plan.id == selected.id,
-                                savePercent: _savePercent(plan, paywall),
+                                savePercent: paywall.savePercentOf(plan),
                                 price: price,
                                 onTap: () => controller.selectPlan(plan.id),
                               ),
@@ -168,10 +168,6 @@ class PaywallScreen extends ConsumerWidget {
       ),
     );
   }
-
-  /// Rounded down, so the claim is never bigger than the real saving.
-  static int _savePercent(PricingPlan plan, PaywallConfig paywall) =>
-      ((1 - plan.pricePerMonth / paywall.referenceMonthlyPrice) * 100).floor();
 }
 
 class _PlanOption extends StatelessWidget {

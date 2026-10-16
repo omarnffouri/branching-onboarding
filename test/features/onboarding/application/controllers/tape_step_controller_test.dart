@@ -63,10 +63,55 @@ void main() {
     expect(tape().value, tape().step.max);
   });
 
+  test('the tape moves within range and ticks on each whole number', () {
+    open();
+    final start = tape().value;
+
+    expect(page().moveTo(start + 0.3), isFalse);
+    expect(tape().position, start + 0.3);
+    expect(page().moveTo(start + 0.6), isTrue);
+    expect(tape().shown, start + 1);
+
+    page().moveTo(1000);
+    expect(tape().position, tape().step.max);
+    // Moving alone saves nothing.
+    expect(saved(), isNull);
+  });
+
+  test('the buttons move one cm and save it', () {
+    open(waist: 84);
+
+    page().nudge(1);
+
+    expect(tape().shown, 85);
+    expect(saved(), const NumberAnswer(85));
+  });
+
+  test('letting go saves the nearest whole number', () {
+    open(waist: 84);
+    page().dragBy(1.4);
+
+    expect(page().settle(instant: true), 85);
+    expect(tape().position, 85);
+    expect(saved(), const NumberAnswer(85));
+  });
+
+  test('skipping puts the tape back on the starting value', () {
+    open(waist: 84);
+
+    page()
+      ..moveTo(90)
+      ..skip();
+
+    expect(tape().position, tape().step.initial);
+  });
+
   test('submitting saves the value and moves on', () {
     open();
 
-    page().submit(82);
+    page()
+      ..moveTo(82)
+      ..submit();
 
     expect(saved(), const NumberAnswer(82));
     expect(currentStep(), isNot(step));

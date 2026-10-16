@@ -1,12 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:traininpink_onboarding/features/onboarding/application/plan_summary.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/answer.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/answer_formatter.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_engine.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/localized_text.dart';
+import 'package:traininpink_onboarding/features/onboarding/domain/plan_summary.dart';
 
 import '../../../helpers/config_fixtures.dart';
 

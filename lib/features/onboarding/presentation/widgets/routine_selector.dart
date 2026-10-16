@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
 
 /// Visible boundaries make every answer tappable before one is selected.

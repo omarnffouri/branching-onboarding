@@ -104,6 +104,10 @@ void main() {
     expect(page('email').submit(), isFalse);
     expect(currentStep(), 'email');
     expect(text('email').status.showError, isTrue);
+    // Each refusal is counted, so the page shakes every time.
+    expect(text('email').rejections, 1);
+    page('email').submit();
+    expect(text('email').rejections, 2);
   });
 
   test('fixing the value clears the error straight away', () {
@@ -114,6 +118,22 @@ void main() {
       ..changed('layla@example.com');
 
     expect(text('email').status.showError, isFalse);
+  });
+
+  test('the text box starts with what she typed before', () {
+    openOn('name', {'name': 'Layla'});
+    expect(page('name').field.text, 'Layla');
+  });
+
+  test('the typo fix fills the box and saves the address', () {
+    openOnEmail();
+    page('email').changed('layla@gmial.com');
+    final suggestion = text('email').status.suggestion!;
+
+    page('email').applySuggestion(suggestion);
+
+    expect(page('email').field.text, suggestion);
+    expect(saved('email'), TextAnswer(suggestion));
   });
 
   test('a second tap after moving on is not a rejection', () {

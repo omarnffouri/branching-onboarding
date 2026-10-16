@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show NotifierProviderFamily;
 import 'package:meta/meta.dart';
@@ -26,6 +27,7 @@ final class WeekStepState {
     required this.min,
     required this.max,
     required this.canContinue,
+    this.atLimit = false,
   });
 
   /// The questions on this page, in path order.
@@ -39,6 +41,10 @@ final class WeekStepState {
   /// The most her routine allows (beginners start lower).
   final int max;
   final bool canContinue;
+
+  /// She just tried to go above her limit; the page explains why. Any
+  /// change to her answers clears it.
+  final bool atLimit;
 
   FrequencyStep? get frequency => steps.whereType<FrequencyStep>().firstOrNull;
 }
@@ -101,6 +107,7 @@ class WeekStepController extends Notifier<WeekStepState> {
   /// She picked her routine. Saves it and re-suggests her weekly count,
   /// since what fits a beginner doesn't fit someone training daily.
   void selectRoutine(SingleChoiceStep step, ChoiceOption option) {
+    _clearLimit();
     final answers = ref.read(onboardingControllerProvider).answers;
     final choice = ChoiceAnswer(option.id);
     if (answers[step.id] == choice) return;
@@ -113,15 +120,39 @@ class WeekStepController extends Notifier<WeekStepState> {
     });
   }
 
-  /// She moved the picker to [count].
+  /// She moved the picker to [count]: a click when it changes, a firm
+  /// nudge when it is above her limit.
   FrequencyChange setCount(int count) {
     final frequency = state.frequency;
     if (frequency == null || count < state.min || count == state.count) {
       return FrequencyChange.ignored;
     }
-    if (count > state.max) return FrequencyChange.overLimit;
+    if (count > state.max) {
+      HapticFeedback.mediumImpact().ignore();
+      state = WeekStepState(
+        steps: state.steps,
+        count: state.count,
+        min: state.min,
+        max: state.max,
+        canContinue: state.canContinue,
+        atLimit: true,
+      );
+      return FrequencyChange.overLimit;
+    }
     _flow.answerGroup(pageId, {frequency.id: NumberAnswer(count)});
+    HapticFeedback.selectionClick().ignore();
     return FrequencyChange.changed;
+  }
+
+  void _clearLimit() {
+    if (!state.atLimit) return;
+    state = WeekStepState(
+      steps: state.steps,
+      count: state.count,
+      min: state.min,
+      max: state.max,
+      canContinue: state.canContinue,
+    );
   }
 
   /// Moves on. The count she sees is saved first, so a suggestion she

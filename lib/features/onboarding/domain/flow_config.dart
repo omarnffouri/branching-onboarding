@@ -359,6 +359,24 @@ enum ChoiceDisplay { list, body }
 
 enum BodyRegion { arms, belly, back, glutes, legs }
 
+/// Which way the body map faces.
+enum BodySide {
+  front,
+  back
+  ;
+
+  BodySide get opposite => this == front ? back : front;
+}
+
+extension BodyRegionSide on BodyRegion {
+  /// Arms and legs read from both sides; the rest belong to one.
+  bool visibleOn(BodySide side) => switch (this) {
+    BodyRegion.belly => side == BodySide.front,
+    BodyRegion.back || BodyRegion.glutes => side == BodySide.back,
+    BodyRegion.arms || BodyRegion.legs => true,
+  };
+}
+
 /// Shared by single and multi choice steps.
 sealed class ChoiceStep extends FlowStep {
   const ChoiceStep({
@@ -951,6 +969,11 @@ final class PaywallConfig {
   /// The most expensive monthly rate, used to show "save 50%".
   double get referenceMonthlyPrice =>
       plans.map((p) => p.pricePerMonth).reduce((a, b) => a > b ? a : b);
+
+  /// How much [plan] saves against the priciest monthly rate. Rounded down,
+  /// so the claim is never bigger than the real saving.
+  int savePercentOf(PricingPlan plan) =>
+      ((1 - plan.pricePerMonth / referenceMonthlyPrice) * 100).floor();
 
   Iterable<LocalizedText> get texts => [
     for (final plan in plans) ...[plan.title, ?plan.badge],

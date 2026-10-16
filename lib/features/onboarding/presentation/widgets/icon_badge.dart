@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
 import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/config_icons.dart';
 
 class IconBadge extends StatelessWidget {

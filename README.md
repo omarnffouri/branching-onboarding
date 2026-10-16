@@ -6,7 +6,7 @@ It has its own visual identity: a dusty rose palette (pink, like the brand name)
 
 The flow is driven by one JSON file. Adding a question, a branch, or a piece of the plan is a config change. Changing an earlier answer re-routes the rest of the flow and drops answers from paths she has left.
 
-> Built and polished for **iPhone** (tested on the iPhone 17 Pro Max simulator). Android runs but has not had a polish pass.
+> Built and polished for **iPhone** (iPhone 17 Pro Max simulator and a real iPhone), and checked end to end on **Android** in English and Arabic.
 
 ---
 
@@ -16,7 +16,7 @@ The flow is driven by one JSON file. Adding a question, a branch, or a piece of 
 flutter --version   # 3.41.0 stable (Dart 3.11)
 flutter pub get
 flutter run         # pick an iPhone simulator or a device
-flutter test        # 55 tests: engine, config, controller, widgets
+flutter test        # 176 tests: engine, config, controllers, widgets
 ```
 
 For judging feel on a real phone, `flutter run --release` gives release-mode animation timing.
@@ -42,11 +42,12 @@ For judging feel on a real phone, `flutter run --release` gives release-mode ani
 
 | | |
 |---|---|
-| **Config-driven steps** | Single choice, multi choice, free text (name, email) and info screens, all from `assets/config/onboarding.json` |
+| **Config-driven steps** | Single choice, multi choice, free text (name, email), number, weekly frequency and info screens, all from `assets/config/onboarding.json`. Steps that share a `group` share one page |
 | **Branching** | Steps *and individual options* have `showIf` rules (`equals`, `in`, `includes`, `all`, `any`, `not`) |
 | **Correct re-routing** | Going back and changing an answer drops every answer that no longer applies, including an option that disappeared ("5 days a week" after she says she rarely trains) |
 | **Personalised plan** | Title, stats and highlights come from config rules over her answers. "Built from your answers" lists only steps on her path, each one tappable to edit |
 | **Edit from the plan** | Changing an answer from the plan asks only the questions the change opened, then returns to the plan |
+| **Custom inputs** | A member card that fills in as she types her name and email, a tape measure she drags across a waist render, a weekly rhythm picker that suggests a count from her routine, and a tappable front/back body map for focus areas, drawn in code |
 | **Email** | Validation shown on submit (never while typing), one-tap typo fix (`gmial.com` → `gmail.com`), email keyboard, autofill |
 | **Paywall** | Plans from config, a clear selected state, honest "save %" (rounded down), trial timeline, AED pricing. Subscribing records the choice |
 | **Resume** | Saved on every change, restored against the current config, with a "welcome back" greeting |
@@ -80,20 +81,23 @@ lib/
 ├── main.dart                   load + validate config, open storage, run
 ├── app.dart                    MaterialApp, theme per language, config error screen
 ├── core/
-│   ├── design/                 tokens, theme, AppAssets (every image/video path), focus mixin
-│   │   └── widgets/            generic UI any app could use: button, card, pressable, motion
-│   └── l10n/                   ARB files for app chrome, language controller
+│   ├── analytics/              one app-wide analytics function, swappable for a real backend
+│   ├── l10n/                   ARB files (EN + AR), the app-wide LanguageController and its store
+│   └── ui/                     tokens, theme, AppAssets (every image/video path), focus mixin
+│       └── widgets/            generic UI any app could use: button, card, chip, segmented toggle,
+│                               pressable, page transition, motion, shake, typing hint
 └── features/
     ├── onboarding/
-    │   ├── domain/             the rules, pure Dart (no Flutter): config, conditions, FlowEngine, validator
-    │   ├── data/               config loader, progress store
+    │   ├── domain/             the rules, pure Dart (no Flutter): config, conditions, FlowEngine, validator, plan summary
+    │   ├── data/               config loader, progress store (it also keeps the language)
     │   ├── application/        state and logic, no widgets
     │   │   │                   OnboardingController owns the flow: answers, navigation, saving
-    │   │   └── controllers/    one logic controller per page type (choice, text, tape, week)
+    │   │   └── controllers/    one controller per page type (choice, text, tape, week): its state,
+    │   │                       actions, timers and haptics, plus the text box and its focus
     │   └── presentation/
     │       ├── screens/        whole pages: welcome, building, plan, flow shell
     │       ├── steps/          one view per step type + the shared step layout;
-    │       │                   views keep only UI (animation, timers, haptics)
+    │       │                   views only lay out and animate; no setState, no logic
     │       └── widgets/        onboarding pieces: header, member card, tape, rhythm picker, body map…
     └── paywall/presentation/   paywall, success, price formatting
 ```
@@ -169,7 +173,7 @@ Run on every launch (the app shows a readable error screen listing every problem
 | **Conditions only look backwards** | One-pass resolution, no cycles, easy to reason about | A question can't depend on a later one, which onboarding never needs |
 | **Question copy lives in the config** (app chrome in ARB) | Adding a question really is one file | Translators work in two places |
 | **Sealed step types + exhaustive `switch`** | A new step type won't compile until it has a screen | Adding a type is a code change (adding a question isn't) |
-| **One Riverpod `Notifier` owns state**; widgets send intents | Clear ownership; easy to test with fakes | |
+| **Riverpod owns all state**: one `OnboardingController` for the flow, one controller per page type; views only send intents, with no `setState` anywhere | Clear ownership; every page's behaviour is tested without building a widget | A little more code than local widget state |
 | **Intents carry their origin** (`continueFrom(stepId)`) | A double tap, or a tap on a page sliding away, is ignored. No timers, no `isNavigating` flags | |
 | **Navigator pages derived from state, as `CupertinoPage`s** | Native iOS swipe-back that mirrors in Arabic; navigation is just state changing | Pages under the current one stay mounted |
 | **Header above the navigator** | The progress bar stays put and glides while questions slide underneath | |
@@ -202,7 +206,7 @@ Run on every launch (the app shows a readable error screen listing every problem
 - **Motion:** one vocabulary (160 / 280 / 480 ms, ease-out). Staggered entrances are driven by the route animation, so they reverse on back and never replay. Everything collapses under *Reduce Motion*.
 - **Video:** the welcome clip is muted, loops, fades in once its first frame is ready (no flash of a different image), plays only while the welcome screen is on top, and *mixes with other audio*, so opening the app never pauses her music. Under Reduce Motion it is replaced by a still photo.
 - **Flow background:** radial gradients rather than blur filters, one ticker, its own repaint layer.
-- **Haptics:** a selection click on choices, a light impact on Continue, a medium impact on subscribe and on an invalid email.
+- **Haptics:** a selection click on choices and on each cm of the tape, a light impact on Continue, a medium impact on subscribe, on an invalid email, above her weekly limit and when her plan is ready.
 - **Accessibility:** semantics on cards (selected / checked / mutually exclusive), the progress bar ("Step 3 of 8") and icon buttons. Text scaling is supported up to 130%.
 
 ---
@@ -214,21 +218,35 @@ Run on every launch (the app shows a readable error screen listing every problem
 | `flow_engine_test.dart` | Branching paths, **the brief's example** (leaving *get back into it* drops `last_trained` from path and plan), nested branches, option-level pruning, stale answers can't steer |
 | `flow_invariants_test.dart` | **1,000 random members** walk the real config, going back and changing their minds. After every move: no stale answers, no dead ends, stable resolution, config order, plan copy fully filled. All 5 real paths explored |
 | `config_validator_test.dart` | The bundled config is valid; each class of mistake is reported with its location |
+| `optional_steps_test.dart` | Only opted-in steps can be skipped, and a skipped measurement is left out of the plan |
 | `onboarding_controller_test.dart` | Double tap moves one step, back keeps answers, resume after restart, version mismatch, edit-from-plan re-routing, subscription recorded, funnel events |
+| `controllers/*_test.dart` | Each page's behaviour without any UI: text saving, errors and the typo fix; choice selection, auto-advance and turning the body map; tape drag, snap, −/+ and skip; weekly count limits |
+| `paywall_config_test.dart` | The "save %" is rounded down, never overstated |
 | `email_address_test.dart` | Validation and typo suggestions, including not "fixing" real domains like `mail.com` |
+| `*_step_view_test.dart`, `body_map_test.dart` | Member card updates live, email stays left to right, tape skip target, rhythm picker as an adjustable slider, body map taps match the chips and turn her around, all in EN and AR at 1.3× text |
+| `onboarding_navigation_test.dart`, `plan_screen_test.dart` | Edge swipes during transitions are safe; the plan fits at 1.3× in both languages |
 | `app_test.dart` | App boots into the flow, Arabic is RTL, resume greeting, every config icon and image exists |
 
 CI (`.github/workflows/ci.yml`) runs formatting, `flutter analyze --fatal-infos` and the tests.
 
 ---
 
+## Where I stopped
+
+These were the last things I worked on, and I stopped while working on the body map:
+
+- **Body map:** redrawing the focus-areas figure as a curved front/back body.
+- **Waist step:** the layout with the tape measure over the waist image.
+- **Folder restructure:** reorganising the folders after the AI-assisted build, so every file has one obvious home.
+- **Refactor:** moving logic and state out of the screens into the page controllers (no `setState` left), after the AI-assisted build.
+
 ## What I cut, and why
 
 - **Dark mode:** their app is light, and it would double the design QA in the timebox.
 - **Real purchases** (StoreKit / RevenueCat): out of scope by the brief.
 - **Remote config and experiment assignment:** the config is bundled and versioned, ready to be fetched.
-- **Analytics backend:** events go through one function (`onboarding.analytics` in the console). Swapping in Amplitude or Firebase is a one-line provider override.
-- **Android polish pass, golden tests, Lottie:** time went to the flow, RTL and the branching guarantees instead.
+- **Analytics backend:** events go through one function (`app.analytics` in the console). Swapping in Amplitude or Firebase is a one-line provider override.
+- **Android-specific design, golden tests, Lottie:** Android runs the same flow and was checked end to end, but it keeps the iPhone look (Cupertino transitions, iOS-style haptics) rather than getting its own Material treatment. Time went to the flow, RTL and the branching guarantees instead.
 - **Matching Traininpink's exact look:** deliberately not done. The palette is ours, and the real brand can be dropped into `tokens.dart`.
 
 ## What I'd do next
@@ -254,7 +272,7 @@ At that point she has invested a few minutes, told us what matters to her, and j
 
 ### 2. What would you instrument to learn where people drop out, and what is the first thing you would change if the data showed a cliff at the email step?
 
-**Instrument:** `step_viewed`, `step_completed` and `step_back`, keyed by **step id** (not index, because paths differ), with path length, branch, language and time on step. Also: app backgrounded mid-step, resume, edits from the plan, paywall viewed / plan selected / subscribed, and for email specifically, invalid submit attempts and whether the typo suggestion was shown and accepted. Most of this is already emitted by the controller (`onboarding.analytics`).
+**Instrument:** `step_viewed`, `step_completed` and `step_back`, keyed by **step id** (not index, because paths differ), with path length, branch, language and time on step. Also: app backgrounded mid-step, resume, edits from the plan, paywall viewed / plan selected / subscribed, and for email specifically, invalid submit attempts and whether the typo suggestion was shown and accepted. Most of this is already emitted by the controller (`app.analytics`).
 
 **First change for an email cliff:** first find out *which* cliff it is. Many invalid attempts means friction. Abandoning without typing means reluctance. For reluctance, the first experiment I'd ship is **moving email after the plan reveal, framed as "Save my plan"**: the value exchange becomes concrete, and she has already seen what she gets. Next I'd add **Sign in with Apple** (one tap, and private relay respects members who don't want to share an address). For friction, the inline typo fix is already in place, and I'd look at the keyboard and autofill data next. Because the order lives in the config, each of these is a config variant behind an experiment.
 
@@ -262,7 +280,7 @@ At that point she has invested a few minutes, told us what matters to her, and j
 
 ## Assumptions
 
-- iPhone first, portrait only. Light mode, matching the current Traininpink app.
+- iPhone first (Android works, with the same design), portrait only. Light mode, matching the current Traininpink app.
 - Name and email are required. Nothing is sent anywhere: there is no backend.
 - Changing an answer that closes a branch discards that branch's answers rather than remembering them.
 - "Subscribing just records the choice": the plan id and timestamp are saved locally, and the success screen shows the trial end date.

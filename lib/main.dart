@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:traininpink_onboarding/app.dart';
+import 'package:traininpink_onboarding/core/l10n/language_store.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/data/config_loader.dart';
 import 'package:traininpink_onboarding/features/onboarding/data/onboarding_store.dart';
@@ -30,6 +31,8 @@ Future<void> main() async {
       overrides: [
         flowConfigProvider.overrideWithValue(config),
         onboardingStoreProvider.overrideWithValue(store),
+        // The same local store also keeps her language.
+        languageStoreProvider.overrideWithValue(store),
       ],
       child: const TraininpinkApp(),
     ),

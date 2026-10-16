@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:traininpink_onboarding/core/design/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/tokens.dart';
+import 'package:traininpink_onboarding/core/ui/widgets/typing_examples.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/typing_examples.dart';
 
 /// Her name or email, no box: the text is the interface. A rose line
 /// grows under it as she types, and while it's empty, examples type
