@@ -32,21 +32,29 @@ void main() {
   /// overriding the ones given in [answers].
   void finishQuestions([Map<String, Answer> answers = const {}]) {
     while (state().stage == OnboardingStage.questions) {
-      final step = state().resolution.path[state().currentIndex];
-      final answer =
-          answers[step.id] ??
-          switch (step) {
-            SingleChoiceStep(:final options) => ChoiceAnswer(options.first.id),
-            MultiChoiceStep(:final options) => MultiChoiceAnswer([
-              options.first.id,
-            ]),
-            TextInputStep(kind: TextInputKind.email) => const TextAnswer(
-              'layla@example.com',
-            ),
-            TextInputStep() => const TextAnswer('Layla'),
-            InfoStep() => const Acknowledged(),
-          };
-      answerAndContinue(answer);
+      final pageId = state().currentStepId!;
+      final group = state().pageGroups[state().currentPageIndex];
+      for (final step in group.steps) {
+        final answer =
+            answers[step.id] ??
+            switch (step) {
+              SingleChoiceStep(:final options) => ChoiceAnswer(
+                options.first.id,
+              ),
+              MultiChoiceStep(:final options) => MultiChoiceAnswer([
+                options.first.id,
+              ]),
+              TextInputStep(kind: TextInputKind.email) => const TextAnswer(
+                'layla@example.com',
+              ),
+              TextInputStep() => const TextAnswer('Layla'),
+              NumberStep(:final initial) => NumberAnswer(initial),
+              FrequencyStep(:final min) => NumberAnswer(min),
+              InfoStep() => const Acknowledged(),
+            };
+        controller().answerGroup(pageId, {step.id: answer});
+      }
+      controller().continueGroup(pageId);
     }
   }
 
@@ -139,12 +147,148 @@ void main() {
 
     test('an edit that closes a branch goes straight back to the plan', () {
       controller().editFromPlan('focus_areas');
-      answerAndContinue(MultiChoiceAnswer(['arms', 'glutes']));
+      answerAndContinue(MultiChoiceAnswer(const ['arms', 'glutes']));
 
       expect(state().stage, OnboardingStage.plan);
       expect(
         state().answers['focus_areas'],
-        MultiChoiceAnswer(['arms', 'glutes']),
+        MultiChoiceAnswer(const ['arms', 'glutes']),
+      );
+    });
+  });
+
+  group('grouped pages', () {
+    void openWeek() {
+      controller().start();
+      answerAndContinue(const TextAnswer('Layla'));
+      answerAndContinue(const ChoiceAnswer('build_strength'));
+    }
+
+    test('Continue needs both answers and skips the whole group once', () {
+      openWeek();
+      controller()
+        ..answerGroup('current_training', {
+          'current_training': const ChoiceAnswer('rarely'),
+        })
+        ..continueGroup('current_training');
+      expect(state().currentStepId, 'current_training');
+      controller()
+        ..answerGroup('current_training', {
+          'days_per_week': const NumberAnswer(2),
+        })
+        ..continueGroup('current_training')
+        ..continueGroup('current_training');
+      expect(state().currentStepId, 'focus_areas');
+      expect(state().answers['days_per_week'], const NumberAnswer(2));
+    });
+
+    test('back crosses the whole group and stale page actions are ignored', () {
+      openWeek();
+      controller()
+        ..answerGroup('current_training', {
+          'current_training': const ChoiceAnswer('sometimes'),
+          'days_per_week': const NumberAnswer(3),
+        })
+        ..continueGroup('current_training')
+        ..answerGroup('current_training', {
+          'days_per_week': const NumberAnswer(2),
+        })
+        ..backFromStep('focus_areas');
+      expect(state().currentStepId, 'current_training');
+      expect(state().answers['days_per_week'], const NumberAnswer(3));
+      controller()
+        ..backFromStep('current_training')
+        ..backFromStep('current_training');
+      expect(state().currentStepId, 'goal');
+    });
+
+    test(
+      'caps are re-evaluated and group answers cannot touch other pages',
+      () {
+        openWeek();
+        controller().answerGroup('current_training', {
+          'current_training': const ChoiceAnswer('regularly'),
+          'days_per_week': const NumberAnswer(5),
+        });
+        controller().answerGroup('current_training', {
+          'current_training': const ChoiceAnswer('rarely'),
+        });
+        expect(state().answers, isNot(contains('days_per_week')));
+        controller().answerGroup('current_training', {
+          'goal': const ChoiceAnswer('get_back_into_it'),
+        });
+        expect(state().answers['goal'], const ChoiceAnswer('build_strength'));
+      },
+    );
+
+    test('progress counts the week once while the engine keeps both steps', () {
+      openWeek();
+      expect(state().path, hasLength(7));
+      expect(state().pageGroups, hasLength(6));
+      expect(state().currentPageIndex, 2);
+      expect(state().progress, 3 / 7);
+    });
+
+    test('saved cursor inside a group resumes at its first question', () {
+      openWeek();
+      store.progress = {...?store.progress, 'currentStepId': 'days_per_week'};
+      container = createContainer(store: store);
+      expect(state().currentStepId, 'current_training');
+    });
+
+    test('a legacy count answer before the saved cursor is revisited', () {
+      controller().start();
+      finishQuestions({'goal': const ChoiceAnswer('build_strength')});
+      final savedAnswers = store.progress!['answers']! as Map<String, Object?>;
+      store.progress = {
+        ...?store.progress,
+        'stage': 'questions',
+        'currentStepId': 'focus_areas',
+        'answers': {...savedAnswers, 'days_per_week': 'two'},
+      };
+      container = createContainer(store: store);
+      expect(state().currentStepId, 'current_training');
+      expect(state().answers['name'], const TextAnswer('Layla'));
+      expect(state().answers, isNot(contains('days_per_week')));
+    });
+
+    test(
+      'a plan edit to frequency opens the group and returns to the plan',
+      () {
+        controller().start();
+        finishQuestions({'goal': const ChoiceAnswer('build_strength')});
+        controller()
+          ..finishBuilding()
+          ..editFromPlan('days_per_week');
+        expect(state().currentStepId, 'current_training');
+        controller()
+          ..answerGroup('current_training', {
+            'days_per_week': const NumberAnswer(2),
+          })
+          ..continueGroup('current_training');
+        expect(state().stage, OnboardingStage.plan);
+      },
+    );
+
+    test('nonconsecutive week questions retain the comeback path order', () {
+      controller().start();
+      answerAndContinue(const TextAnswer('Layla'));
+      answerAndContinue(const ChoiceAnswer('get_back_into_it'));
+      expect(
+        state().pageGroups[state().currentPageIndex].steps.map(
+          (step) => step.id,
+        ),
+        ['last_trained'],
+      );
+      answerAndContinue(const ChoiceAnswer('few_months'));
+      expect(state().currentStepId, 'stop_reason');
+      answerAndContinue(const ChoiceAnswer('busy'));
+      expect(state().currentStepId, 'days_per_week');
+      expect(
+        state().pageGroups[state().currentPageIndex].steps.map(
+          (step) => step.id,
+        ),
+        ['days_per_week'],
       );
     });
   });

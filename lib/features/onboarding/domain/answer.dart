@@ -71,6 +71,26 @@ final class TextAnswer extends Answer {
   String toString() => 'TextAnswer($value)';
 }
 
+/// A measured value, e.g. her waist in centimetres.
+final class NumberAnswer extends Answer {
+  const NumberAnswer(this.value);
+
+  final int value;
+
+  @override
+  Object toJson() => value;
+
+  @override
+  bool operator ==(Object other) =>
+      other is NumberAnswer && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => 'NumberAnswer($value)';
+}
+
 /// She has seen an info screen and moved on.
 final class Acknowledged extends Answer {
   const Acknowledged();

@@ -65,6 +65,10 @@ sealed class FlowStep {
     this.subtitle,
     this.showIf,
     this.summaryLabel,
+    this.image,
+    this.imageFocus = ImageFocus.center,
+    this.group,
+    this.groupTitle,
   });
 
   factory FlowStep.fromJson(Object? json, String path) {
@@ -74,50 +78,151 @@ sealed class FlowStep {
     final subtitle = _optionalText(map, 'subtitle', path);
     final showIf = _optionalCondition(map, 'showIf', path);
     final summaryLabel = _optionalText(map, 'summaryLabel', path);
+    final image = map.optionalString('image', path);
+    final group = map.optionalString('group', path);
+    final groupTitle = _optionalText(map, 'groupTitle', path);
+    final imageFocus = map.containsKey('imageFocus')
+        ? ImageFocus.fromJson(map['imageFocus'], '$path.imageFocus')
+        : ImageFocus.center;
 
     return switch (map.string('type', path)) {
       'single' => SingleChoiceStep(
         id: id,
         title: title,
+        group: group,
+        groupTitle: groupTitle,
         subtitle: subtitle,
         showIf: showIf,
         summaryLabel: summaryLabel,
+        image: image,
+        imageFocus: imageFocus,
         options: _options(map, path),
       ),
       'multi' => MultiChoiceStep(
         id: id,
         title: title,
+        group: group,
+        groupTitle: groupTitle,
         subtitle: subtitle,
         showIf: showIf,
         summaryLabel: summaryLabel,
+        image: image,
+        imageFocus: imageFocus,
         options: _options(map, path),
         minSelected: map.integer('minSelected', path, fallback: 1),
       ),
       'text' => TextInputStep(
         id: id,
         title: title,
+        group: group,
+        groupTitle: groupTitle,
         subtitle: subtitle,
         showIf: showIf,
         summaryLabel: summaryLabel,
+        image: image,
+        imageFocus: imageFocus,
         kind: TextInputKind.fromJson(map.string('input', path), '$path.input'),
         placeholder: _optionalText(map, 'placeholder', path),
+      ),
+      'number' => NumberStep(
+        id: id,
+        title: title,
+        group: group,
+        groupTitle: groupTitle,
+        subtitle: subtitle,
+        showIf: showIf,
+        summaryLabel: summaryLabel,
+        image: image,
+        imageFocus: imageFocus,
+        unit: LocalizedText.fromJson(map['unit'], '$path.unit'),
+        min: map.integer('min', path),
+        max: map.integer('max', path),
+        initial: map.integer('initial', path),
+        measureWidth: switch (map['measureWidth']) {
+          null => null,
+          final num value when value > 0 && value <= 1 => value.toDouble(),
+          _ => throw ConfigFormatException(
+            '$path.measureWidth',
+            'expected a fraction between 0 and 1',
+          ),
+        },
+        measureAt: switch (map['measureAt']) {
+          null => 0.5,
+          final num value when value > 0 && value < 1 => value.toDouble(),
+          _ => throw ConfigFormatException(
+            '$path.measureAt',
+            'expected a fraction between 0 and 1',
+          ),
+        },
+      ),
+      'frequency' => FrequencyStep(
+        id: id,
+        title: title,
+        group: group,
+        groupTitle: groupTitle,
+        subtitle: subtitle,
+        showIf: showIf,
+        summaryLabel: summaryLabel,
+        min: map.integer('min', path),
+        max: map.integer('max', path),
+        maxIf: [
+          for (final (i, rule) in map.optionalList('maxIf', path).indexed)
+            FrequencyMaxRule.fromJson(rule, '$path.maxIf[$i]'),
+        ],
+        suggestedBy: [
+          for (final source in map.list('suggestedBy', path))
+            if (source is String)
+              source
+            else
+              throw ConfigFormatException(
+                '$path.suggestedBy',
+                'expected step ids',
+              ),
+        ],
+        suggested: {
+          for (final entry in readMap(
+            map['suggested'],
+            '$path.suggested',
+          ).entries)
+            entry.key: readMap(
+              map['suggested'],
+              '$path.suggested',
+            ).integer(entry.key, '$path.suggested'),
+        },
+        counts: [
+          for (final (i, count) in map.list('counts', path).indexed)
+            FrequencyCount.fromJson(count, '$path.counts[$i]'),
+        ],
       ),
       'info' => InfoStep(
         id: id,
         title: title,
+        group: group,
+        groupTitle: groupTitle,
         subtitle: subtitle,
         showIf: showIf,
-        body: LocalizedText.fromJson(map['body'], '$path.body'),
+        image: image,
+        imageFocus: imageFocus,
+        body: _optionalText(map, 'body', path),
+        points: [
+          for (final (i, point) in map.optionalList('points', path).indexed)
+            InfoPoint.fromJson(point, '$path.points[$i]'),
+        ],
         icon: map.optionalString('icon', path),
       ),
       final type => throw ConfigFormatException(
         '$path.type',
-        'unknown step type "$type" (expected single, multi, text or info)',
+        'unknown step type "$type" '
+            '(expected single, multi, text, number, frequency or info)',
       ),
     };
   }
 
   final String id;
+
+  /// Consecutive steps with the same group share a presentation page.
+  final String? group;
+  final LocalizedText? groupTitle;
   final LocalizedText title;
   final LocalizedText? subtitle;
 
@@ -126,6 +231,14 @@ sealed class FlowStep {
 
   /// Label for this answer on the plan screen. Null keeps it off the plan.
   final LocalizedText? summaryLabel;
+
+  /// Optional photo shown above the question, a file name in
+  /// `assets/images/steps/`. Pictures are content, so they live in the
+  /// config with the copy.
+  final String? image;
+
+  /// Which part of the photo to keep when it's cropped, -1..1 on each axis.
+  final ImageFocus imageFocus;
 
   /// Returns [answer] if it is still a valid answer to this step given the
   /// answers that come before it, otherwise null.
@@ -138,7 +251,12 @@ sealed class FlowStep {
   Answer? answerFromJson(Object? json);
 
   /// Every piece of copy on this step, for language and placeholder checks.
-  Iterable<LocalizedText> get texts => [title, ?subtitle, ?summaryLabel];
+  Iterable<LocalizedText> get texts => [
+    title,
+    ?subtitle,
+    ?summaryLabel,
+    ?groupTitle,
+  ];
 
   static LocalizedText? _optionalText(JsonMap map, String key, String path) =>
       map.containsKey(key)
@@ -191,6 +309,10 @@ sealed class ChoiceStep extends FlowStep {
     super.subtitle,
     super.showIf,
     super.summaryLabel,
+    super.image,
+    super.imageFocus,
+    super.group,
+    super.groupTitle,
   });
 
   final List<ChoiceOption> options;
@@ -215,6 +337,10 @@ final class SingleChoiceStep extends ChoiceStep {
     super.subtitle,
     super.showIf,
     super.summaryLabel,
+    super.image,
+    super.imageFocus,
+    super.group,
+    super.groupTitle,
   });
 
   @override
@@ -239,6 +365,10 @@ final class MultiChoiceStep extends ChoiceStep {
     super.subtitle,
     super.showIf,
     super.summaryLabel,
+    super.image,
+    super.imageFocus,
+    super.group,
+    super.groupTitle,
   });
 
   final int minSelected;
@@ -292,6 +422,10 @@ final class TextInputStep extends FlowStep {
     super.subtitle,
     super.showIf,
     super.summaryLabel,
+    super.image,
+    super.imageFocus,
+    super.group,
+    super.groupTitle,
   });
 
   final TextInputKind kind;
@@ -311,22 +445,200 @@ final class TextInputStep extends FlowStep {
       json is String ? TextAnswer(json) : null;
 }
 
+/// A whole number picked within a range, e.g. her waist measurement.
+final class NumberStep extends FlowStep {
+  const NumberStep({
+    required super.id,
+    required super.title,
+    required this.unit,
+    required this.min,
+    required this.max,
+    required this.initial,
+    this.measureAt = 0.5,
+    this.measureWidth,
+    super.subtitle,
+    super.showIf,
+    super.summaryLabel,
+    super.image,
+    super.imageFocus,
+    super.group,
+    super.groupTitle,
+  });
+
+  final LocalizedText unit;
+  final int min;
+  final int max;
+
+  /// Where the picker starts before she moves it.
+  final int initial;
+
+  /// How far down the photo (0 top, 1 bottom) the measurement is taken,
+  /// e.g. her waist line. Lives with the photo so swapping it is config.
+  final double measureAt;
+
+  /// How much of the screen's width the measured part spans (her waist),
+  /// so the tape wraps exactly around it. Null spans the screen.
+  final double? measureWidth;
+
+  @override
+  Iterable<LocalizedText> get texts => [...super.texts, unit];
+
+  @override
+  Answer? sanitize(Answer answer, Answers earlier) => switch (answer) {
+    NumberAnswer(:final value) when value >= min && value <= max => answer,
+    _ => null,
+  };
+
+  @override
+  Answer? answerFromJson(Object? json) =>
+      json is int ? NumberAnswer(json) : null;
+}
+
+/// A weekly session count, with the same backward-only caps as choice options.
+final class FrequencyStep extends FlowStep {
+  const FrequencyStep({
+    required super.id,
+    required super.title,
+    required this.min,
+    required this.max,
+    required this.counts,
+    this.maxIf = const [],
+    this.suggestedBy = const [],
+    this.suggested = const {},
+    super.subtitle,
+    super.showIf,
+    super.summaryLabel,
+    super.group,
+    super.groupTitle,
+  });
+
+  final int min;
+
+  /// Default cap; the first matching rule overrides it.
+  final int max;
+  final List<FrequencyMaxRule> maxIf;
+  final List<String> suggestedBy;
+  final Map<String, int> suggested;
+  final List<FrequencyCount> counts;
+
+  int allowedMax(Answers answers) {
+    for (final rule in maxIf) {
+      if (rule.when.evaluate(answers)) return rule.max;
+    }
+    return max;
+  }
+
+  int? suggestionFor(Answers answers) {
+    for (final source in suggestedBy) {
+      if (answers[source] case ChoiceAnswer(:final optionId)) {
+        final count = suggested[optionId];
+        if (count != null && sanitize(NumberAnswer(count), answers) != null) {
+          return count;
+        }
+      }
+    }
+    return null;
+  }
+
+  FrequencyCount? countCopy(int count) {
+    for (final copy in counts) {
+      if (copy.count == count) return copy;
+    }
+    return null;
+  }
+
+  @override
+  Iterable<LocalizedText> get texts => [
+    ...super.texts,
+    for (final count in counts) ...[count.label, count.description],
+  ];
+
+  @override
+  Answer? sanitize(Answer answer, Answers earlier) => switch (answer) {
+    NumberAnswer(:final value)
+        when value >= min && value <= allowedMax(earlier) =>
+      answer,
+    _ => null,
+  };
+
+  @override
+  Answer? answerFromJson(Object? json) {
+    if (json is int) return NumberAnswer(json);
+    // Keep the frequency from the previous weekday picker on app upgrades.
+    if (json is List<Object?> &&
+        json.every((day) => day is int && day >= 0 && day <= 6)) {
+      return NumberAnswer(json.toSet().length);
+    }
+    return null;
+  }
+}
+
+final class FrequencyMaxRule {
+  const FrequencyMaxRule({required this.when, required this.max});
+
+  factory FrequencyMaxRule.fromJson(Object? json, String path) {
+    final map = readMap(json, path);
+    return FrequencyMaxRule(
+      when: Condition.fromJson(map['when'], '$path.when'),
+      max: map.integer('max', path),
+    );
+  }
+
+  final Condition when;
+  final int max;
+}
+
+final class FrequencyCount {
+  const FrequencyCount({
+    required this.count,
+    required this.label,
+    required this.description,
+  });
+
+  factory FrequencyCount.fromJson(Object? json, String path) {
+    final map = readMap(json, path);
+    return FrequencyCount(
+      count: map.integer('count', path),
+      label: LocalizedText.fromJson(map['label'], '$path.label'),
+      description: LocalizedText.fromJson(
+        map['description'],
+        '$path.description',
+      ),
+    );
+  }
+
+  final int count;
+  final LocalizedText label;
+  final LocalizedText description;
+}
+
 /// A screen with no question: reassurance, education, social proof.
 final class InfoStep extends FlowStep {
   const InfoStep({
     required super.id,
     required super.title,
-    required this.body,
+    this.body,
+    this.points = const [],
     this.icon,
     super.subtitle,
     super.showIf,
+    super.image,
+    super.imageFocus,
+    super.group,
+    super.groupTitle,
   });
 
-  final LocalizedText body;
+  /// A paragraph, or (better for skimming) a few [points].
+  final LocalizedText? body;
+  final List<InfoPoint> points;
   final String? icon;
 
   @override
-  Iterable<LocalizedText> get texts => [...super.texts, body];
+  Iterable<LocalizedText> get texts => [
+    ...super.texts,
+    ?body,
+    for (final point in points) ...[point.title, point.text],
+  ];
 
   @override
   Answer? sanitize(Answer answer, Answers earlier) =>
@@ -335,6 +647,53 @@ final class InfoStep extends FlowStep {
   @override
   Answer? answerFromJson(Object? json) =>
       json == true ? const Acknowledged() : null;
+}
+
+/// Art direction for a cropped photo: -1 is the left/top edge, 1 the
+/// right/bottom, 0 the centre.
+final class ImageFocus {
+  const ImageFocus(this.x, this.y);
+
+  factory ImageFocus.fromJson(Object? json, String path) {
+    final map = readMap(json, path);
+    double axis(String key) {
+      final value = map[key] ?? 0;
+      if (value is num && value >= -1 && value <= 1) return value.toDouble();
+      throw ConfigFormatException(
+        '$path.$key',
+        'expected a number from -1 to 1',
+      );
+    }
+
+    return ImageFocus(axis('x'), axis('y'));
+  }
+
+  static const center = ImageFocus(0, 0);
+
+  final double x;
+  final double y;
+}
+
+/// One beat of an info screen, shown as a step in a short flow.
+final class InfoPoint {
+  const InfoPoint({
+    required this.icon,
+    required this.title,
+    required this.text,
+  });
+
+  factory InfoPoint.fromJson(Object? json, String path) {
+    final map = readMap(json, path);
+    return InfoPoint(
+      icon: map.string('icon', path),
+      title: LocalizedText.fromJson(map['title'], '$path.title'),
+      text: LocalizedText.fromJson(map['text'], '$path.text'),
+    );
+  }
+
+  final String icon;
+  final LocalizedText title;
+  final LocalizedText text;
 }
 
 // ---------------------------------------------------------------------------

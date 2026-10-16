@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_analytics.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_state.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
+import 'package:traininpink_onboarding/features/onboarding/application/step_group.dart';
 import 'package:traininpink_onboarding/features/onboarding/data/onboarding_store.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/answer.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
@@ -76,24 +77,44 @@ class OnboardingController extends Notifier<OnboardingState> {
     );
   }
 
+  /// Both controls save together, so a changed routine sanitizes stale days
+  /// in the same resolution. Hidden or departed pages cannot submit answers.
+  void answerGroup(String pageStepId, Answers answers) {
+    if (!_isOnStep(pageStepId)) return;
+    final group = StepGroup.containing(state.path, pageStepId);
+    if (answers.keys.any((id) => !group.contains(id))) return;
+    _set(
+      state.copyWith(
+        resolution: _engine.resolve({...state.answers, ...answers}),
+      ),
+    );
+  }
+
   void continueFrom(String stepId) {
     if (!_isOnStep(stepId)) return;
-    var resolution = state.resolution;
-    if (_config.stepById(stepId) is InfoStep) {
-      resolution = _engine.resolve({
-        ...state.answers,
-        stepId: const Acknowledged(),
+    continueGroup(stepId);
+  }
+
+  /// A single guarded transition completes every question on this page.
+  void continueGroup(String pageStepId) {
+    if (!_isOnStep(pageStepId)) return;
+    final group = StepGroup.containing(state.path, pageStepId);
+    final resolution = _engine.resolve({
+      ...state.answers,
+      for (final step in group.steps)
+        if (step is InfoStep) step.id: const Acknowledged(),
+    });
+    if (group.steps.any((step) => !resolution.isAnswered(step.id))) return;
+    for (final step in group.steps) {
+      _analytics('step_completed', {
+        'step': step.id,
+        'index': resolution.indexOf(step.id),
       });
     }
-    if (!resolution.isAnswered(stepId)) return;
-    _analytics('step_completed', {
-      'step': stepId,
-      'index': resolution.indexOf(stepId),
-    });
 
     final next = state.editingFromPlan
-        ? resolution.firstUnansweredAfter(stepId)
-        : resolution.stepAfter(stepId);
+        ? resolution.firstUnansweredAfter(group.last.id)
+        : resolution.stepAfter(group.last.id);
     if (next != null) {
       _moveTo(next, resolution);
     } else if (state.editingFromPlan) {
@@ -116,11 +137,16 @@ class OnboardingController extends Notifier<OnboardingState> {
   void backFromStep(String stepId) {
     if (!_isOnStep(stepId)) return;
     _analytics('step_back', {'step': stepId});
-    final previous = state.resolution.stepBefore(stepId);
+    final group = StepGroup.containing(state.path, stepId);
+    final previous = state.resolution.stepBefore(group.first.id);
     if (previous == null) {
       _set(state.copyWith(stage: OnboardingStage.welcome));
     } else {
-      _set(state.copyWith(currentStepId: previous.id));
+      _set(
+        state.copyWith(
+          currentStepId: StepGroup.containing(state.path, previous.id).first.id,
+        ),
+      );
     }
   }
 
@@ -141,7 +167,7 @@ class OnboardingController extends Notifier<OnboardingState> {
     _set(
       state.copyWith(
         stage: OnboardingStage.questions,
-        currentStepId: stepId,
+        currentStepId: StepGroup.containing(state.path, stepId).first.id,
         editingFromPlan: true,
       ),
     );
@@ -153,7 +179,7 @@ class OnboardingController extends Notifier<OnboardingState> {
     _set(
       state.copyWith(
         stage: OnboardingStage.questions,
-        currentStepId: state.path.last.id,
+        currentStepId: state.pageGroups.last.first.id,
         editingFromPlan: false,
       ),
     );
@@ -214,16 +240,17 @@ class OnboardingController extends Notifier<OnboardingState> {
       state.stage == OnboardingStage.questions && state.currentStepId == stepId;
 
   void _moveTo(FlowStep step, FlowResolution resolution) {
+    final pageStep = StepGroup.containing(resolution.path, step.id).first;
     _set(
       state.copyWith(
         stage: OnboardingStage.questions,
         resolution: resolution,
-        currentStepId: step.id,
+        currentStepId: pageStep.id,
       ),
     );
     _analytics('step_viewed', {
-      'step': step.id,
-      'index': resolution.indexOf(step.id),
+      'step': pageStep.id,
+      'index': resolution.indexOf(pageStep.id),
       'path_length': resolution.path.length,
     });
   }

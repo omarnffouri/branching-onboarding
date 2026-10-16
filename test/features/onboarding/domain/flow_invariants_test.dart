@@ -41,6 +41,12 @@ void main() {
           'member${random.nextInt(1000)}@example.com',
         ),
         TextInputStep() => TextAnswer(pick(['Layla', 'Noura', 'Sara'], random)),
+        NumberStep(:final min, :final max) => NumberAnswer(
+          min + random.nextInt(max - min + 1),
+        ),
+        FrequencyStep(:final min) => NumberAnswer(
+          min + random.nextInt(step.allowedMax(answers) - min + 1),
+        ),
         InfoStep() => const Acknowledged(),
       };
 

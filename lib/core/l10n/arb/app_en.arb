@@ -1,0 +1,115 @@
+{
+  "@@locale": "en",
+
+  "languageNameShort": "EN",
+  "@languageNameShort": { "description": "Label for this language in the language toggle." },
+
+  "welcomeEyebrow": "Lymphatic drainage Pilates",
+  "welcomeTitle": "Feel lighter, stronger and more like you.",
+  "welcomeBody": "Pilates built around your body, in minutes a day.",
+  "welcomeCta": "Build my plan",
+  "welcomeFootnote": "First, a few quick questions",
+
+  "continueButton": "Continue",
+  "backButton": "Back",
+  "closeButton": "Close",
+  "progressSemantics": "Step {current} of {total}",
+  "@progressSemantics": {
+    "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "multiSelectedCount": "{count, plural, =0{Pick at least one} =1{1 selected} other{{count} selected}}",
+  "@multiSelectedCount": { "placeholders": { "count": { "type": "int" } } },
+
+  "emailInvalid": "That doesn't look like an email address yet.",
+  "emailSuggestion": "Did you mean {email}?",
+  "@emailSuggestion": { "placeholders": { "email": { "type": "String" } } },
+  "emailUseSuggestion": "Use it",
+
+  "resumeTitle": "Welcome back, {name}",
+  "@resumeTitle": { "placeholders": { "name": { "type": "String" } } },
+  "resumeTitleNoName": "Welcome back",
+  "resumeBody": "Your answers are saved. Let's pick up where you left off.",
+
+  "buildingTitle": "Building your plan",
+  "buildingReady": "Your plan is ready",
+
+  "planEyebrow": "Your personal plan",
+  "planHighlightsTitle": "What's inside",
+  "planAnswersTitle": "Built from your answers",
+  "planAnswersHint": "Tap an answer to change it. Your plan updates instantly.",
+  "planCta": "Start my plan",
+  "planEditSemantics": "Change {label}",
+  "@planEditSemantics": { "placeholders": { "label": { "type": "String" } } },
+
+  "currencyAmount": "{currency} {amount}",
+  "@currencyAmount": {
+    "placeholders": { "currency": { "type": "String" }, "amount": { "type": "String" } }
+  },
+  "currencyAed": "AED",
+
+  "paywallTitle": "Your plan is waiting, {name}",
+  "@paywallTitle": { "placeholders": { "name": { "type": "String" } } },
+  "paywallSubtitle": "Choose how you'd like to start. Cancel anytime.",
+  "paywallPerMonth": "{price}/month",
+  "@paywallPerMonth": { "placeholders": { "price": { "type": "String" } } },
+  "paywallBilledMonthly": "Billed monthly",
+  "paywallBilledYearly": "{price} billed yearly",
+  "@paywallBilledYearly": { "placeholders": { "price": { "type": "String" } } },
+  "paywallBilledEveryMonths": "{price} every {months} months",
+  "@paywallBilledEveryMonths": {
+    "placeholders": { "price": { "type": "String" }, "months": { "type": "int" } }
+  },
+  "paywallSave": "Save {percent}%",
+  "@paywallSave": { "placeholders": { "percent": { "type": "int" } } },
+  "paywallTrialDays": "{days, plural, =1{1-day free trial} other{{days}-day free trial}}",
+  "@paywallTrialDays": { "placeholders": { "days": { "type": "int" } } },
+  "paywallCtaTrial": "{days, plural, =1{Start my free day} other{Start my {days}-day free trial}}",
+  "@paywallCtaTrial": { "placeholders": { "days": { "type": "int" } } },
+  "paywallCtaSubscribe": "Subscribe for {price}",
+  "@paywallCtaSubscribe": { "placeholders": { "price": { "type": "String" } } },
+  "paywallTimelineTitle": "How your free trial works",
+  "paywallTimelineToday": "Today",
+  "paywallTimelineTodayBody": "Your full plan unlocks. Start your first session.",
+  "paywallTimelineDay": "Day {day}",
+  "@paywallTimelineDay": { "placeholders": { "day": { "type": "int" } } },
+  "paywallTimelineReminderBody": "We'll remind you before your trial ends.",
+  "paywallTimelineBillingBody": "You're billed {price}. Cancel before and you pay nothing.",
+  "@paywallTimelineBillingBody": { "placeholders": { "price": { "type": "String" } } },
+  "paywallFinePrint": "Demo only: nothing is charged and no store account is needed.",
+
+  "successTitle": "Welcome to Traininpink, {name}",
+  "@successTitle": { "placeholders": { "name": { "type": "String" } } },
+  "successTrialBody": "Your free trial is on until {date}. Your first session is ready whenever you are.",
+  "@successTrialBody": { "placeholders": { "date": { "type": "String" } } },
+  "successBody": "Your {plan} membership is active. Your first session is ready whenever you are.",
+  "@successBody": { "placeholders": { "plan": { "type": "String" } } },
+  "successRestart": "Restart the demo",
+  "memberCardMember": "Member",
+  "memberCardActive": "Active",
+  "memberCardName": "NAME",
+  "nameExamples": "Layla,Noura,Sara,Mariam",
+  "@nameExamples": { "description": "Comma-separated first names typed as an animated placeholder." },
+  "tapeHint": "Drag the tape",
+  "weekEyebrow": "FIND YOUR RHYTHM",
+  "weekLimit": "Let's start with {max} sessions. You can add more later.",
+  "@weekLimit": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "rhythmSessions": "sessions a week",
+  "rhythmSwipe": "Swipe to find your pace",
+  "rhythmCta": "This feels right",
+  "rhythmLess": "Fewer sessions",
+  "rhythmMore": "More sessions",
+  "rhythmValue": "{count} sessions a week",
+  "@rhythmValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

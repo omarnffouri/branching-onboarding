@@ -1,3 +1,4 @@
+import 'package:traininpink_onboarding/features/onboarding/domain/answer.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/condition.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/localized_text.dart';
@@ -33,6 +34,7 @@ final class InvalidConfigException implements Exception {
 /// config, so a bad edit fails CI rather than an onboarding session.
 abstract final class ConfigValidator {
   static final _idPattern = RegExp(r'^[a-z][a-z0-9_]*$');
+  static final _imagePattern = RegExp(r'^[a-z0-9_-]+\.(jpg|jpeg|png|webp)$');
 
   static void ensureValid(FlowConfig config) {
     final issues = validate(config);
@@ -97,7 +99,13 @@ abstract final class ConfigValidator {
         report(path, 'id must be lower_snake_case');
       }
       if (!seenIds.add(step.id)) report(path, 'duplicate step id');
+      if (step.group case final group? when !_idPattern.hasMatch(group)) {
+        report(path, 'group must be lower_snake_case');
+      }
 
+      if (step.image case final image? when !_imagePattern.hasMatch(image)) {
+        report(path, 'image "$image" must be a file name like goal.jpg');
+      }
       if (step.showIf case final showIf?) {
         checkCondition(showIf, '$path.showIf');
       }
@@ -118,9 +126,66 @@ abstract final class ConfigValidator {
           }
         }
       }
+      if (step is InfoStep && step.body == null && step.points.isEmpty) {
+        report(path, 'an info step needs a "body" or "points"');
+      }
+      if (step is NumberStep &&
+          !(step.min < step.max &&
+              step.initial >= step.min &&
+              step.initial <= step.max)) {
+        report(path, 'needs min < max and initial within them');
+      }
       if (step is MultiChoiceStep &&
           (step.minSelected < 0 || step.minSelected > step.options.length)) {
         report(path, 'minSelected must be between 0 and the option count');
+      }
+      if (step is FrequencyStep) {
+        if (step.min < 1 || step.min > step.max || step.max > 7) {
+          report(path, 'needs 1 <= min <= max <= 7');
+        }
+        var highestMax = step.max;
+        for (final rule in step.maxIf) {
+          checkCondition(rule.when, '$path.maxIf');
+          if (rule.max < step.min || rule.max > 7) {
+            report(path, 'maxIf must stay between min and 7');
+          }
+          if (rule.max > highestMax) highestMax = rule.max;
+        }
+        for (var count = step.min; count <= highestMax; count++) {
+          if (step.countCopy(count) == null) {
+            report(path, 'missing count copy for $count sessions');
+          }
+        }
+        if (step.counts.map((copy) => copy.count).toSet().length !=
+            step.counts.length) {
+          report(path, 'duplicate frequency count copy');
+        }
+        final sources = <SingleChoiceStep>[];
+        for (final sourceId in step.suggestedBy) {
+          final source = earlier[sourceId];
+          if (source is! SingleChoiceStep) {
+            report(path, 'suggestedBy must name earlier single choice steps');
+          } else {
+            sources.add(source);
+          }
+        }
+        for (final MapEntry(:key, :value) in step.suggested.entries) {
+          final matching = sources.where(
+            (source) => source.options.any((o) => o.id == key),
+          );
+          if (matching.isEmpty) report(path, 'unknown suggested option "$key"');
+          if (value < step.min ||
+              value > highestMax ||
+              matching.any(
+                (source) =>
+                    value > step.allowedMax({source.id: ChoiceAnswer(key)}),
+              )) {
+            report(
+              path,
+              'suggested pattern "$key" must respect min and allowed max',
+            );
+          }
+        }
       }
 
       earlier[step.id] = step;
@@ -188,6 +253,14 @@ abstract final class ConfigValidator {
         report(path, '"${target.id}" is multi choice; use "includes"');
       case (AnswerIncludes(), _):
         report(path, '"includes" only works on multi choice steps');
+      case (_, NumberStep()):
+        report(
+          path,
+          '"${target.id}" is a number; conditions on numbers '
+          "aren't supported yet",
+        );
+      case (_, FrequencyStep()):
+        report(path, 'conditions on frequencies are not supported');
       case (_, InfoStep()):
         report(path, '"${target.id}" is an info step and has no answer');
       case (AnswerIn(), TextInputStep()):

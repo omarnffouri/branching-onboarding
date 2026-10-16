@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_analytics.dart';
 import 'package:traininpink_onboarding/features/onboarding/data/onboarding_store.dart';
+import 'package:traininpink_onboarding/features/onboarding/domain/answer_formatter.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
 
 /// Loaded and validated in `main` before the first frame, so the UI never
@@ -15,4 +17,12 @@ final onboardingStoreProvider = Provider<OnboardingStore>(
 
 final onboardingAnalyticsProvider = Provider<OnboardingAnalytics>(
   (ref) => logAnalyticsEvent,
+);
+
+/// Fills `{step}` placeholders in config copy, in the current language.
+final answerFormatterProvider = Provider<AnswerFormatter>(
+  (ref) => AnswerFormatter(
+    ref.watch(flowConfigProvider),
+    ref.watch(languageProvider),
+  ),
 );

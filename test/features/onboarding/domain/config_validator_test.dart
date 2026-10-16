@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/config_json.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/config_validator.dart';
@@ -101,6 +104,63 @@ void main() {
       contains('is not one of the plans'),
       contains('needs a trial'),
     ]);
+  });
+
+  group('frequency config', () {
+    Map<String, Object?> bundledJson() =>
+        jsonDecode(
+              File('assets/config/onboarding.json').readAsStringSync(),
+            )
+            as Map<String, Object?>;
+
+    Map<String, Object?> weekIn(Map<String, Object?> json) =>
+        (json['steps']! as List<Object?>)
+            .cast<Map<String, Object?>>()
+            .firstWhere((step) => step['id'] == 'days_per_week');
+
+    test('invalid bounds and rule conditions fail validation', () {
+      final json = bundledJson();
+      weekIn(json)
+        ..['min'] = 4
+        ..['max'] = 3
+        ..['maxIf'] = [
+          {'when': answerEquals('session_length', 'ten'), 'max': 8},
+        ];
+      final issues = issuesFor(json);
+      expect(issues, contains(contains('min <= max')));
+      expect(issues, contains(contains('comes later')));
+      expect(issues, contains(contains('maxIf must stay between min and 7')));
+    });
+
+    test('invalid suggestions and sources are reported', () {
+      final json = bundledJson();
+      weekIn(json)
+        ..['suggestedBy'] = ['current_training', 'missing_step']
+        ..['suggested'] = {'rarely': 4, 'sometimes': 1, 'unknown': 3};
+      final issues = issuesFor(json);
+      expect(
+        issues,
+        contains(contains('suggestedBy must name earlier single choice steps')),
+      );
+      expect(
+        issues,
+        contains(contains('pattern "rarely" must respect min and allowed max')),
+      );
+      expect(issues, contains(contains('unknown suggested option "unknown"')));
+    });
+
+    test('count descriptions need both languages and every allowed count', () {
+      final json = bundledJson();
+      final week = weekIn(json);
+      ((week['counts']! as List<Object?>).first!
+          as Map<String, Object?>)['description'] = {
+        'en': 'A gentle start',
+      };
+      (week['counts']! as List<Object?>).removeLast();
+      final issues = issuesFor(json);
+      expect(issues, contains(contains('missing "ar" copy')));
+      expect(issues, contains(contains('missing count copy for 5 sessions')));
+    });
   });
 
   test('shape errors point at the exact field', () {

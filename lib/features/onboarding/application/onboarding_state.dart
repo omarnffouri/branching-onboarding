@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:traininpink_onboarding/features/onboarding/application/step_group.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/answer.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_engine.dart';
@@ -65,11 +66,17 @@ final class OnboardingState {
   int get currentIndex =>
       currentStepId == null ? -1 : resolution.indexOf(currentStepId!);
 
+  List<StepGroup> get pageGroups => StepGroup.fromPath(path);
+
+  int get currentPageIndex =>
+      pageGroups.indexWhere((group) => group.contains(currentStepId ?? ''));
+
   /// 0..1 across the questions. The last question does not read as 100%:
   /// the plan reveal is what completes it.
   double get progress => switch (stage) {
     OnboardingStage.welcome => 0,
-    OnboardingStage.questions => (currentIndex + 1) / (path.length + 1),
+    OnboardingStage.questions =>
+      (currentPageIndex + 1) / (pageGroups.length + 1),
     _ => 1,
   };
 
@@ -145,8 +152,20 @@ final class OnboardingState {
       stage = OnboardingStage.questions;
       currentStepId = resolution.firstUnanswered!.id;
     }
+    // A changed question type can invalidate an answer before the saved
+    // cursor. Revisit it before allowing an incomplete plan to be built.
+    final unanswered = resolution.firstUnanswered;
+    if (stage == OnboardingStage.questions &&
+        unanswered != null &&
+        resolution.indexOf(unanswered.id) < resolution.indexOf(currentStepId)) {
+      currentStepId = unanswered.id;
+    }
 
     final savedPlanId = json['selectedPlanId'];
+    currentStepId = StepGroup.containing(
+      resolution.path,
+      currentStepId,
+    ).first.id;
     return OnboardingState(
       stage: stage,
       resolution: resolution,

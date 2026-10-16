@@ -29,9 +29,19 @@ final class AnswerFormatter {
               option.label.resolve(languageCode),
         ]),
       (_, TextAnswer(:final value)) => value.trim(),
+      (NumberStep(:final unit), NumberAnswer(:final value)) =>
+        '$value ${unit.resolve(languageCode)}',
+      (final FrequencyStep frequency, NumberAnswer(:final value)) =>
+        frequency.countCopy(value)?.label.resolve(languageCode),
       _ => null,
     };
   }
+
+  int? count(String stepId, Answers answers) =>
+      switch ((config.stepById(stepId), answers[stepId])) {
+        (FrequencyStep(), NumberAnswer(:final value)) => value,
+        _ => null,
+      };
 
   /// Resolves [text] and replaces each `{step_id}` with her answer.
   String fill(LocalizedText text, Answers answers) => text
