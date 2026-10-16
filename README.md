@@ -1,8 +1,8 @@
-# Traininpink: config-driven onboarding
+# Config-driven onboarding
 
-A personalised onboarding flow for Traininpink. A few questions, a plan built from her answers, and a paywall, in **English and Arabic**. It runs fully offline and nothing is really purchased.
+A personalised onboarding flow for a women's fitness app. A few questions, a plan built from her answers, and a paywall, in **English and Arabic**. It runs fully offline and nothing is really purchased.
 
-It has its own visual identity: a dusty rose palette (pink, like the brand name) and a motion language built on *flow*, a nod to lymphatic drainage. A looping Pilates clip opens the app, photos sit above the key questions, soft colour drifts behind the reassurance screens, and the plan "fills up" like liquid while it's built.
+It has its own visual identity: a dusty rose palette and a motion language built on *flow*, a nod to lymphatic drainage. A looping Pilates clip opens the app, photos sit above the key questions, soft colour drifts behind the reassurance screens, and the plan "fills up" like liquid while it's built.
 
 The flow is driven by one JSON file. Adding a question, a branch, or a piece of the plan is a config change. Changing an earlier answer re-routes the rest of the flow and drops answers from paths she has left.
 
@@ -38,13 +38,12 @@ For judging feel on a real phone, `flutter run --release` gives release-mode ani
 1. **Build my plan**, type a name. Every later screen uses it.
 2. Pick **Get back into training**. Two new questions appear and the progress bar eases *back*, because her path just got longer. Answer **A few months**.
 3. Pick **An injury**. You get an injury branch, plus a reassurance screen that names the areas she picked.
-4. **Long-press the progress bar** to open the flow inspector: every step in the config, whether it is on her path, and the rule that skipped it.
-5. Finish. On the plan, tap **Why you stopped** and change it to **Life got busy**. You go straight back to the plan: the injury content is gone and the intensity changes from *Low impact* to *Moderate*.
-6. Close the app mid-flow and reopen it. *"Welcome back, Layla"*, on the exact question.
-7. Tap **ع** on any screen. Everything mirrors. Swipe from the right edge to go back.
-8. Type `layla@gmial.com` at the email step.
-9. Double-tap Continue as fast as you can. You move exactly one step.
-10. On the paywall, switch plans. The trial timeline and the button text follow.
+4. Finish. On the plan, tap **Why you stopped** and change it to **Life got busy**. You go straight back to the plan: the injury content is gone and the intensity changes from *Low impact* to *Moderate*.
+5. Close the app mid-flow and reopen it. *"Welcome back, Layla"*, on the exact question.
+6. Tap **ع** on any screen. Everything mirrors. Swipe from the right edge to go back.
+7. Type `layla@gmial.com` at the email step.
+8. Double-tap Continue as fast as you can. You move exactly one step.
+9. On the paywall, switch plans. The trial timeline and the button text follow.
 
 ---
 
@@ -190,8 +189,8 @@ Run on every launch (the app shows a readable error screen listing every problem
 | **Plan content in the config** | A new branch can change the plan it leads to without code | Plan rules are less flexible than code |
 | **Saved progress re-validated against the current config** | A renamed option or a new question never breaks a returning member | Bumping `version` discards saved progress |
 | **5 runtime dependencies** (`flutter_riverpod`, `shared_preferences`, `intl`, `meta`, `video_player`) | No go_router, freezed, lottie or google_fonts (which fetches at runtime and breaks offline). `video_player` is Flutter's official plugin and earns its place on the first screen | Slightly more hand-written code |
-| **Our own palette, not theirs** | The brief asks for a flow that feels finished, not a copy of the current app. Dusty rose keeps the brand's "pink" while staying calm | A re-theme to their real brand is a one-file change in `tokens.dart` |
-| **Motion built on "flow"** | One idea (gentle flow, never bounce) ties the video, the drifting backgrounds and the liquid fill together, and it suits a lymphatic drainage brand | More moving parts to keep calm. All of it stops under Reduce Motion |
+| **Its own palette** | The brief asks for a flow that feels finished. Dusty rose is warm while staying calm | Re-theming to any brand is a one-file change in `tokens.dart` |
+| **Motion built on "flow"** | One idea (gentle flow, never bounce) ties the video, the drifting backgrounds and the liquid fill together, and it suits the lymphatic drainage theme | More moving parts to keep calm. All of it stops under Reduce Motion |
 | **Info screens educate rather than show testimonials** | Fabricated social proof in a demo is the wrong habit; this is where real member stories would go | Less persuasive than real testimonials |
 
 ---
@@ -252,12 +251,11 @@ These were the last things I worked on, and I stopped while working on the body 
 
 ## What I cut, and why
 
-- **Dark mode:** their app is light, and it would double the design QA in the timebox.
+- **Dark mode:** the design is light-first, and it would double the design QA in the timebox.
 - **Real purchases** (StoreKit / RevenueCat): out of scope by the brief.
 - **Remote config and experiment assignment:** the config is bundled and versioned, ready to be fetched.
 - **Analytics backend:** events go through one function (`app.analytics` in the console). Swapping in Amplitude or Firebase is a one-line provider override.
 - **Android-specific design, golden tests, Lottie:** Android runs the same flow and was checked end to end, but it keeps the iPhone look (Cupertino transitions, iOS-style haptics) rather than getting its own Material treatment. Time went to the flow, RTL and the branching guarantees instead.
-- **Matching Traininpink's exact look:** deliberately not done. The palette is ours, and the real brand can be dropped into `tokens.dart`.
 
 ## What I'd do next
 
@@ -290,7 +288,7 @@ At that point she has invested a few minutes, told us what matters to her, and j
 
 ## Assumptions
 
-- iPhone first (Android works, with the same design), portrait only. Light mode, matching the current Traininpink app.
+- iPhone first (Android works, with the same design), portrait only. Light mode.
 - Name and email are required. Nothing is sent anywhere: there is no backend.
 - Changing an answer that closes a branch discards that branch's answers rather than remembering them.
 - "Subscribing just records the choice": the plan id and timestamp are saved locally, and the success screen shows the trial end date.
