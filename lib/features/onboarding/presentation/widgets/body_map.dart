@@ -325,80 +325,91 @@ class _AreaChip extends StatelessWidget {
 typedef _Piece = (Path shape, Rect band);
 
 /// The figure in a 200 × 420 design space, built once per side.
+///
+/// One continuous, curved silhouette (shoulders, a real waist, hips,
+/// tapered legs) drawn as a smooth spline, with the arms slightly apart.
+/// Areas are bands of that same silhouette, so a highlight always follows
+/// her outline instead of a box.
 final class _Figure {
   _Figure._(this.side) {
-    Path mirrored(Path path) => path
-        .transform(Matrix4.diagonal3Values(-1, 1, 1).storage)
-        .shift(Offset(size.width, 0));
+    // Left half of the body, outside edge top to bottom, then up the inner
+    // leg. The right half is its mirror image.
+    const half = [
+      Offset(92, 60), // neck
+      Offset(83, 70),
+      Offset(67, 79), // shoulder slope
+      Offset(57, 89),
+      Offset(55, 101), // shoulder
+      Offset(62, 118), // under the arm
+      Offset(66, 140), // ribs
+      Offset(71, 163),
+      Offset(73, 178), // waist
+      Offset(69, 196),
+      Offset(61, 214), // hip
+      Offset(58, 232),
+      Offset(61, 258), // outer thigh
+      Offset(66, 290),
+      Offset(71, 322), // knee
+      Offset(70, 346), // calf
+      Offset(73, 370),
+      Offset(78, 392), // ankle
+      Offset(74, 404),
+      Offset(84, 411), // foot
+      Offset(93, 409),
+      Offset(90, 394), // inner ankle
+      Offset(89, 372),
+      Offset(90, 346), // inner calf
+      Offset(92, 322), // inner knee
+      Offset(94, 292),
+      Offset(97, 266), // inner thigh
+      Offset(100, 258),
+    ];
+    Offset mirror(Offset point) => Offset(size.width - point.dx, point.dy);
+    body = _smooth([
+      ...half,
+      for (final point in half.reversed.skip(1)) mirror(point),
+    ]);
 
     final leftArm = _limb(const [
-      (60, 92, 10),
-      (52, 118, 10),
-      (46, 150, 8.5),
-      (43, 166, 7),
-      (39, 195, 7),
-      (35, 228, 5.5),
-    ]);
-    final leftLeg = _limb(const [
-      (80, 248, 21),
-      (78, 290, 19),
-      (77, 322, 14),
-      (77, 338, 11.5),
-      (76, 365, 11),
-      (76, 392, 7.5),
-      (77, 402, 6),
+      (60, 94, 9.5),
+      (53, 120, 9),
+      (48, 148, 7.5),
+      (45, 168, 6.5),
+      (41, 198, 6),
+      (38, 226, 4.8),
     ]);
     arms = Path()
       ..addPath(leftArm, Offset.zero)
-      ..addPath(mirrored(leftArm), Offset.zero);
-    legs = Path()
-      ..addPath(leftLeg, Offset.zero)
-      ..addPath(mirrored(leftLeg), Offset.zero);
-    torso = _limb(const [
-      (100, 80, 30),
-      (100, 90, 47),
-      (100, 110, 45),
-      (100, 140, 38),
-      (100, 172, 31),
-      (100, 200, 35),
-      (100, 232, 41),
-      (100, 262, 40),
-      (100, 276, 28),
-    ]);
-    extremities = Path()
-      ..addOval(
-        Rect.fromCenter(center: const Offset(33, 240), width: 11, height: 17),
-      )
-      ..addOval(
-        Rect.fromCenter(center: const Offset(167, 240), width: 11, height: 17),
-      )
-      ..addOval(
-        Rect.fromCenter(center: const Offset(74, 407), width: 19, height: 9),
-      )
-      ..addOval(
-        Rect.fromCenter(center: const Offset(126, 407), width: 19, height: 9),
-      )
-      ..addRRect(
-        RRect.fromLTRBR(91, 56, 109, 86, const Radius.circular(8)),
-      )
-      ..addOval(
-        Rect.fromCenter(center: const Offset(100, 38), width: 40, height: 50),
+      ..addPath(
+        leftArm
+            .transform(Matrix4.diagonal3Values(-1, 1, 1).storage)
+            .shift(Offset(size.width, 0)),
+        Offset.zero,
       );
 
-    const armBand = Rect.fromLTRB(0, 98, 200, 236);
+    extremities = Path()
+      ..addOval(
+        Rect.fromCenter(center: const Offset(36, 238), width: 11, height: 18),
+      )
+      ..addOval(
+        Rect.fromCenter(center: const Offset(164, 238), width: 11, height: 18),
+      )
+      ..addRRect(RRect.fromLTRBR(92, 48, 108, 68, const Radius.circular(7)))
+      ..addOval(
+        Rect.fromCenter(center: const Offset(100, 32), width: 36, height: 44),
+      );
+
+    const armBand = Rect.fromLTRB(0, 100, 200, 232);
     regions = switch (side) {
       BodySide.front => {
-        BodyRegion.belly: [(torso, const Rect.fromLTRB(0, 142, 200, 232))],
-        BodyRegion.legs: [(legs, const Rect.fromLTRB(0, 270, 200, 404))],
+        BodyRegion.belly: [(body, const Rect.fromLTRB(0, 138, 200, 236))],
+        BodyRegion.legs: [(body, const Rect.fromLTRB(0, 262, 200, 404))],
         BodyRegion.arms: [(arms, armBand)],
       },
       BodySide.back => {
-        BodyRegion.back: [(torso, const Rect.fromLTRB(0, 86, 200, 206))],
-        BodyRegion.glutes: [
-          (torso, const Rect.fromLTRB(0, 210, 200, 284)),
-          (legs, const Rect.fromLTRB(0, 210, 200, 284)),
-        ],
-        BodyRegion.legs: [(legs, const Rect.fromLTRB(0, 286, 200, 404))],
+        BodyRegion.back: [(body, const Rect.fromLTRB(0, 82, 200, 204))],
+        BodyRegion.glutes: [(body, const Rect.fromLTRB(0, 204, 200, 266))],
+        BodyRegion.legs: [(body, const Rect.fromLTRB(0, 266, 200, 404))],
         BodyRegion.arms: [(arms, armBand)],
       },
     };
@@ -411,11 +422,12 @@ final class _Figure {
   static final _cache = <BodySide, _Figure>{};
 
   final BodySide side;
-  late final Path arms;
-  late final Path legs;
-  late final Path torso;
 
-  /// Head, neck, hands and feet: part of her, never a focus area.
+  /// Torso and legs as one silhouette.
+  late final Path body;
+  late final Path arms;
+
+  /// Head, neck and hands: part of her, never a focus area.
   late final Path extremities;
 
   /// Ordered for hit testing: the torso areas win over a limb they touch.
@@ -428,6 +440,24 @@ final class _Figure {
       }
     }
     return null;
+  }
+
+  /// A closed Catmull-Rom spline through [points]: every point is on the
+  /// curve and there are no corners.
+  static Path _smooth(List<Offset> points) {
+    final n = points.length;
+    Offset at(int i) => points[(i % n + n) % n];
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var i = 0; i < n; i++) {
+      final p0 = at(i - 1);
+      final p1 = at(i);
+      final p2 = at(i + 1);
+      final p3 = at(i + 2);
+      final c1 = p1 + (p2 - p0) / 6;
+      final c2 = p2 - (p3 - p1) / 6;
+      path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p2.dx, p2.dy);
+    }
+    return path..close();
   }
 
   /// A tapered, rounded limb along a spine of (x, y, half-width) points.
@@ -450,22 +480,12 @@ final class _Figure {
       return Offset(x, y) + away / away.distance * r * 0.9;
     }
 
-    final outline = [
+    return _smooth([
       cap(0, 1),
       ...left,
       cap(spine.length - 1, spine.length - 2),
       ...right.reversed,
-    ];
-    // Midpoint quadratics through every point: smooth, no corners.
-    final n = outline.length;
-    Offset mid(int i) => (outline[i % n] + outline[(i + 1) % n]) / 2;
-    final path = Path()..moveTo(mid(0).dx, mid(0).dy);
-    for (var i = 1; i <= n; i++) {
-      final control = outline[i % n];
-      final end = mid(i);
-      path.quadraticBezierTo(control.dx, control.dy, end.dx, end.dy);
-    }
-    return path..close();
+    ]);
   }
 }
 
@@ -480,9 +500,10 @@ class _BodyPainter extends CustomPainter {
   final Set<BodyRegion> offered;
   final Map<BodyRegion, AnimationController> fills;
 
-  static const _skinLight = Color(0xFFF8D9DF);
-  static const _skin = Color(0xFFEDB9C4);
-  static const _skinShadow = Color(0xFFD796A6);
+  static const _skinLight = Color(0xFFFBE4E8);
+  static const _skin = Color(0xFFF0C3CC);
+  static const _skinShadow = Color(0xFFDDA2B0);
+  static const _contour = Color(0xFFC98A9A);
   static const _hair = Color(0xFF5E2B3A);
 
   @override
@@ -501,109 +522,177 @@ class _BodyPainter extends CustomPainter {
       ..scale(scale);
 
     final bounds = Offset.zero & design;
+    // A soft cylinder: darker at her sides, lit down the middle.
     final clay = Paint()
       ..shader = const LinearGradient(
         colors: [_skinShadow, _skin, _skinLight, _skin, _skinShadow],
-        stops: [0.18, 0.34, 0.5, 0.66, 0.82],
+        stops: [0.24, 0.38, 0.5, 0.62, 0.76],
       ).createShader(bounds);
+    final limbClay = Paint()
+      ..shader = const LinearGradient(
+        colors: [_skinShadow, _skin, _skinLight, _skin, _skinShadow],
+        stops: [0.1, 0.2, 0.5, 0.8, 0.9],
+      ).createShader(bounds);
+    final contour = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1
+      ..color = _contour.withValues(alpha: 0.45);
 
-    // Ground shadow, then limbs behind the torso so shoulders and hips blend.
+    // Ground shadow, then arms behind the body so the shoulders blend.
     canvas
       ..drawOval(
-        Rect.fromCenter(center: const Offset(100, 412), width: 120, height: 14),
+        Rect.fromCenter(center: const Offset(100, 414), width: 110, height: 12),
         Paint()
-          ..color = AppColors.primary.withValues(alpha: 0.1)
+          ..color = AppColors.primary.withValues(alpha: 0.12)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
       )
-      ..drawPath(figure.arms, clay)
-      ..drawPath(figure.legs, clay)
+      ..drawPath(figure.arms, limbClay)
+      ..drawPath(figure.arms, contour)
       ..drawPath(figure.extremities, clay)
-      ..drawPath(figure.torso, clay);
+      ..drawPath(figure.body, clay);
 
-    _paintHair(canvas);
-    if (figure.side == BodySide.back) {
-      canvas.drawLine(
-        const Offset(100, 92),
-        const Offset(100, 205),
-        Paint()
-          ..color = _skinShadow.withValues(alpha: 0.45)
-          ..strokeWidth = 2.5
-          ..strokeCap = StrokeCap.round
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
-      );
-    }
-
+    _paintShading(canvas);
     for (final MapEntry(key: region, value: pieces) in figure.regions.entries) {
       if (!offered.contains(region)) continue;
       _paintRegion(canvas, pieces, fills[region]!.value);
     }
+    canvas.drawPath(figure.body, contour);
+    _paintDetails(canvas);
+    _paintHair(canvas);
     canvas.restore();
+  }
+
+  /// Soft volume inside the silhouette: a shadow under the ribs, light on
+  /// the belly and thighs.
+  void _paintShading(Canvas canvas) {
+    canvas
+      ..save()
+      ..clipPath(figure.body)
+      ..drawOval(
+        Rect.fromCenter(center: const Offset(100, 132), width: 70, height: 26),
+        Paint()
+          ..color = _skinShadow.withValues(alpha: 0.35)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+      )
+      ..drawOval(
+        Rect.fromCenter(center: const Offset(100, 196), width: 34, height: 60),
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.28)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+      )
+      ..drawOval(
+        Rect.fromCenter(center: const Offset(100, 252), width: 18, height: 26),
+        Paint()
+          ..color = _skinShadow.withValues(alpha: 0.4)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      )
+      ..restore();
+  }
+
+  /// A few quiet lines that make the figure read as a body.
+  void _paintDetails(Canvas canvas) {
+    final line = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.3
+      ..color = _contour.withValues(alpha: 0.4)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.6);
+    if (figure.side == BodySide.front) {
+      // Collarbones and the navel.
+      canvas
+        ..drawPath(
+          Path()
+            ..moveTo(94, 74)
+            ..quadraticBezierTo(82, 73, 70, 80)
+            ..moveTo(106, 74)
+            ..quadraticBezierTo(118, 73, 130, 80),
+          line,
+        )
+        ..drawOval(
+          Rect.fromCenter(
+            center: const Offset(100, 190),
+            width: 3.4,
+            height: 5,
+          ),
+          Paint()..color = _contour.withValues(alpha: 0.7),
+        );
+    } else {
+      // Spine and shoulder blades.
+      canvas
+        ..drawLine(const Offset(100, 74), const Offset(100, 202), line)
+        ..drawPath(
+          Path()
+            ..moveTo(86, 98)
+            ..quadraticBezierTo(76, 112, 84, 128)
+            ..moveTo(114, 98)
+            ..quadraticBezierTo(124, 112, 116, 128),
+          line,
+        )
+        ..drawPath(
+          Path()
+            ..moveTo(100, 226)
+            ..quadraticBezierTo(100, 244, 100, 254),
+          line,
+        );
+    }
   }
 
   void _paintHair(Canvas canvas) {
     final hair = Paint()..color = _hair;
-    canvas.drawCircle(const Offset(100, 12), 9, hair);
+    canvas.drawCircle(const Offset(100, 7), 8.5, hair);
     if (figure.side == BodySide.back) {
       canvas.drawOval(
-        Rect.fromCenter(center: const Offset(100, 37), width: 43, height: 53),
+        Rect.fromCenter(center: const Offset(100, 31), width: 39, height: 47),
         hair,
       );
     } else {
       canvas
         ..save()
-        ..clipRect(const Rect.fromLTRB(0, 0, 200, 27))
+        ..clipRect(const Rect.fromLTRB(0, 0, 200, 22))
         ..drawOval(
-          Rect.fromCenter(center: const Offset(100, 36), width: 43, height: 52),
+          Rect.fromCenter(center: const Offset(100, 31), width: 39, height: 47),
           hair,
         )
         ..restore();
     }
   }
 
+  /// A highlight that follows the silhouette and fades out at the top and
+  /// bottom of its area, so there is never a hard edge or a seam.
   void _paintRegion(Canvas canvas, List<_Piece> pieces, double t) {
     for (final (shape, band) in pieces) {
+      // Offered but not picked: a faint hint that the area is tappable.
+      final strength = 0.1 + 0.7 * t;
       canvas
         ..save()
-        ..clipRect(band);
-      if (t > 0) {
-        canvas.drawPath(
-          shape,
-          Paint()
-            ..color = AppColors.primary.withValues(alpha: 0.35 * t)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-        );
-      }
-      canvas
-        ..drawPath(
-          shape,
+        ..clipPath(shape)
+        ..drawRect(
+          band,
           Paint()
             ..shader = LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Color.lerp(
-                  AppColors.primary.withValues(alpha: 0.12),
-                  AppColors.primary.withValues(alpha: 0.82),
-                  t,
-                )!,
-                Color.lerp(
-                  AppColors.primary.withValues(alpha: 0.08),
-                  AppColors.primaryDeep.withValues(alpha: 0.82),
-                  t,
-                )!,
+                AppColors.primary.withValues(alpha: 0),
+                AppColors.primary.withValues(alpha: strength),
+                AppColors.primaryDeep.withValues(alpha: strength),
+                AppColors.primaryDeep.withValues(alpha: 0),
               ],
+              stops: const [0, 0.22, 0.78, 1],
             ).createShader(band),
-        )
-        ..restore();
-      // Hairline seams so each area reads as its own tappable piece.
-      final seam = Paint()
-        ..color = Colors.white.withValues(alpha: 0.7)
-        ..strokeWidth = 1.2;
-      canvas
-        ..save()
-        ..clipPath(shape);
-      for (final y in [band.top, band.bottom]) {
-        canvas.drawLine(Offset(0, y), Offset(_Figure.size.width, y), seam);
+        );
+      if (t > 0) {
+        // A soft inner glow, brightest in the middle of the area.
+        canvas.drawOval(
+          Rect.fromCenter(
+            center: band.center,
+            width: band.width * 0.3,
+            height: band.height * 0.6,
+          ),
+          Paint()
+            ..color = Colors.white.withValues(alpha: 0.18 * t)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+        );
       }
       canvas.restore();
     }
