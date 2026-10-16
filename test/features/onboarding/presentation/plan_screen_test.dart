@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:traininpink_onboarding/core/design/app_theme.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/plan_screen.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/screens/plan_screen.dart';
 
 import '../../../helpers/config_fixtures.dart';
 import '../../../helpers/fakes.dart';

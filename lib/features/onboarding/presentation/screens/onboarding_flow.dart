@@ -2,22 +2,22 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:traininpink_onboarding/core/design/app_assets.dart';
 import 'package:traininpink_onboarding/core/design/tokens.dart';
 import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_state.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/building_plan_screen.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/fade_through_page.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/flow_header.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/flow_inspector.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/plan_screen.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/resume_banner.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/steps/step_hero.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/screens/building_plan_screen.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/screens/plan_screen.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/screens/welcome_screen.dart';
 import 'package:traininpink_onboarding/features/onboarding/presentation/steps/step_screen.dart';
 import 'package:traininpink_onboarding/features/onboarding/presentation/steps/week_step_view.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/welcome_screen.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/fade_through_page.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/flow_header.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/flow_inspector.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/resume_banner.dart';
 import 'package:traininpink_onboarding/features/paywall/presentation/paywall_screen.dart';
 import 'package:traininpink_onboarding/features/paywall/presentation/success_screen.dart';
 
@@ -47,12 +47,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
       _precached = true;
       final config = ref.read(flowConfigProvider);
       for (final image in [
-        welcomeImage,
-        planImage,
-        paywallImage,
-        successImage,
+        ...AppAssets.screenImages,
         for (final step in config.steps)
-          if (step.image case final image?) StepHero.providerFor(image),
+          if (step.image case final image?) AppAssets.step(image),
       ]) {
         precacheImage(image, context).ignore();
       }

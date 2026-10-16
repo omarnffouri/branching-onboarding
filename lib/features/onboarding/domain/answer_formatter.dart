@@ -17,6 +17,7 @@ final class AnswerFormatter {
     if (step == null || answer == null) return null;
 
     return switch ((step, answer)) {
+      (_, SkippedAnswer()) => null,
       (ChoiceStep(:final options), ChoiceAnswer(:final optionId)) => _label(
         options,
         optionId,

@@ -22,6 +22,29 @@ void main() {
     expect(issuesFor(minimalConfigJson()), isEmpty);
   });
 
+  test('every option on a body figure needs its own region', () {
+    final step = choiceStepJson('areas', ['a', 'b', 'c'], type: 'multi')
+      ..['display'] = 'body';
+    final options = step['options']! as List<Object?>;
+    (options[0]! as Map<String, Object?>)['region'] = 'arms';
+    (options[1]! as Map<String, Object?>)['region'] = 'arms';
+
+    expect(issuesFor(minimalConfigJson(steps: [step])), [
+      contains('body region "arms" is used twice'),
+      contains('option "c" needs a body region'),
+    ]);
+    expect(
+      () => FlowConfig.fromJson(
+        minimalConfigJson(
+          steps: [
+            choiceStepJson('areas', ['a'], type: 'multi')..['display'] = 'map',
+          ],
+        ),
+      ),
+      throwsA(isA<ConfigFormatException>()),
+    );
+  });
+
   test('a condition may not depend on a later step', () {
     final issues = issuesFor(
       minimalConfigJson(
@@ -67,6 +90,42 @@ void main() {
     );
 
     expect(issues.single, contains('use "includes"'));
+  });
+
+  test('skipped conditions require an optional target, even when nested', () {
+    for (final optional in [false, true]) {
+      final issues = issuesFor(
+        minimalConfigJson(
+          steps: [
+            choiceStepJson('goal', ['a'])..['optional'] = optional,
+            choiceStepJson(
+              'next',
+              ['x'],
+              showIf: {
+                'all': [
+                  {
+                    'any': [
+                      {
+                        'not': {'answer': 'goal', 'skipped': true},
+                      },
+                    ],
+                  },
+                ],
+              },
+            ),
+          ],
+        ),
+      );
+      if (optional) {
+        expect(issues, isEmpty);
+      } else {
+        expect(
+          issues.single,
+          contains('"skipped" only works on optional steps'),
+        );
+        expect(issues.single, contains('"goal" is not optional'));
+      }
+    }
   });
 
   test('missing Arabic copy, duplicate ids and placeholders are reported', () {

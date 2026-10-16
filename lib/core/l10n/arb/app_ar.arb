@@ -63,6 +63,7 @@
   "memberCardName": "الاسم",
   "nameExamples": "ليلى,نورة,سارة,مريم",
   "tapeHint": "اسحبي الشريط",
+  "skipQuestion": "لستُ متأكدة، تخطّي",
   "weekEyebrow": "اكتشفي إيقاعكِ",
   "weekLimit": "لنبدأ بـ {max} جلسات. يمكنكِ إضافة المزيد لاحقاً.",
   "rhythmSessions": "جلسات في الأسبوع",
@@ -70,5 +71,7 @@
   "rhythmCta": "هذا يناسبني",
   "rhythmLess": "جلسات أقل",
   "rhythmMore": "جلسات أكثر",
+  "bodyFront": "الأمام",
+  "bodyBack": "الخلف",
   "rhythmValue": "{count} جلسات في الأسبوع"
 }

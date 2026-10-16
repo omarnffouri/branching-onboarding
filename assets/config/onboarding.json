@@ -222,6 +222,7 @@
     {
       "id": "waist",
       "type": "number",
+      "optional": true,
       "image": "waist.jpg",
       "measureAt": 0.44,
       "measureWidth": 0.63,
@@ -343,31 +344,36 @@
     },
     {
       "id": "focus_areas",
-      "image": "focus_areas.jpg",
       "type": "multi",
+      "display": "body",
       "minSelected": 1,
       "title": { "en": "Which areas would you like to focus on?", "ar": "على أي مناطق تودّين التركيز؟" },
-      "subtitle": { "en": "Pick as many as you like.", "ar": "اختاري ما تشائين." },
+      "subtitle": { "en": "Tap the body or pick below, as many as you like.", "ar": "اضغطي على الجسم أو اختاري من الأسفل، كما تشائين." },
       "summaryLabel": { "en": "Focus areas", "ar": "مناطق التركيز" },
       "options": [
         {
           "id": "belly",
+          "region": "belly",
           "label": { "en": "Belly & waist", "ar": "البطن والخصر" }
         },
         {
           "id": "legs",
+          "region": "legs",
           "label": { "en": "Legs & thighs", "ar": "الساقين والفخذين" }
         },
         {
           "id": "glutes",
+          "region": "glutes",
           "label": { "en": "Glutes", "ar": "الأرداف" }
         },
         {
           "id": "arms",
+          "region": "arms",
           "label": { "en": "Arms", "ar": "الذراعين" }
         },
         {
           "id": "posture",
+          "region": "back",
           "label": { "en": "Posture & back", "ar": "القوام والظهر" }
         }
       ]
@@ -504,10 +510,12 @@
       },
       {
         "when": {
-          "answer": "goal",
-          "in": [
-            "lose_weight",
-            "feel_lighter"
+          "all": [
+            {
+              "answer": "goal",
+              "in": ["lose_weight", "feel_lighter"]
+            },
+            { "not": { "answer": "waist", "skipped": true } }
           ]
         },
         "icon": "tape",

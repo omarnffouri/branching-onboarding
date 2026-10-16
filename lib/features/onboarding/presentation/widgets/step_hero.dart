@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:traininpink_onboarding/core/design/app_assets.dart';
 import 'package:traininpink_onboarding/core/design/tokens.dart';
 
 /// The photo above a question, named by the step's `image` in the config.
@@ -22,13 +23,6 @@ class StepHero extends StatelessWidget {
   /// Overlaps the photo's bottom edge, e.g. an info step's icon.
   final Widget? badge;
 
-  static const _decodeWidth = 1080;
-
-  static ImageProvider providerFor(String image) => ResizeImage(
-    AssetImage('assets/images/steps/$image'),
-    width: _decodeWidth,
-  );
-
   @override
   Widget build(BuildContext context) {
     final height = (MediaQuery.sizeOf(context).height * 0.22).clamp(
@@ -39,7 +33,7 @@ class StepHero extends StatelessWidget {
     final animate = route != null && !MediaQuery.disableAnimationsOf(context);
 
     Widget photo = Image(
-      image: providerFor(image),
+      image: AppAssets.step(image),
       fit: BoxFit.cover,
       alignment: focus,
       height: height,

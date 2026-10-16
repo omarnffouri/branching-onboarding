@@ -139,6 +139,18 @@ abstract final class ConfigValidator {
           (step.minSelected < 0 || step.minSelected > step.options.length)) {
         report(path, 'minSelected must be between 0 and the option count');
       }
+      if (step is MultiChoiceStep && step.display == ChoiceDisplay.body) {
+        final regions = <BodyRegion>{};
+        for (final option in step.options) {
+          switch (option.region) {
+            case null:
+              report(path, 'option "${option.id}" needs a body region');
+            case final region when !regions.add(region):
+              report(path, 'body region "${region.name}" is used twice');
+            case _:
+          }
+        }
+      }
       if (step is FrequencyStep) {
         if (step.min < 1 || step.min > step.max || step.max > 7) {
           report(path, 'needs 1 <= min <= max <= 7');
@@ -242,6 +254,14 @@ abstract final class ConfigValidator {
     final unknown = leaf.values.where((v) => !optionIds.contains(v));
 
     switch ((leaf, target)) {
+      case (AnswerSkipped(), _):
+        if (!target.optional) {
+          report(
+            path,
+            '"skipped" only works on optional steps; '
+            '"${target.id}" is not optional',
+          );
+        }
       case (AnswerEquals() || AnswerIn(), SingleChoiceStep()):
       case (AnswerIncludes(), MultiChoiceStep()):
         for (final value in unknown) {

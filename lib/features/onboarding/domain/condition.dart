@@ -11,6 +11,7 @@ import 'package:traininpink_onboarding/features/onboarding/domain/config_json.da
 /// { "answer": "goal", "equals": "get_back_into_it" }
 /// { "answer": "goal", "in": ["lose_weight", "feel_lighter"] }
 /// { "answer": "injury_areas", "includes": "knees" }
+/// { "answer": "waist", "skipped": true }
 /// { "any": [ ... ] }  { "all": [ ... ] }  { "not": { ... } }
 /// ```
 sealed class Condition {
@@ -29,6 +30,12 @@ sealed class Condition {
     }
 
     final stepId = map.string('answer', path);
+    if (map.containsKey('skipped')) {
+      if (map['skipped'] != true) {
+        throw ConfigFormatException('$path.skipped', 'expected true');
+      }
+      return AnswerSkipped(stepId);
+    }
     if (map.containsKey('equals')) {
       return AnswerEquals(stepId, map.string('equals', path));
     }
@@ -47,7 +54,8 @@ sealed class Condition {
     }
     throw ConfigFormatException(
       path,
-      'expected one of "equals", "in", "includes", "all", "any" or "not"',
+      'expected one of "equals", "in", "includes", "skipped", '
+      '"all", "any" or "not"',
     );
   }
 
@@ -79,6 +87,20 @@ sealed class AnswerCondition extends Condition {
 
   @override
   Iterable<AnswerCondition> get leaves => [this];
+}
+
+/// Distinguishes a deliberate skip from a question she has not reached.
+final class AnswerSkipped extends AnswerCondition {
+  const AnswerSkipped(super.stepId);
+
+  @override
+  List<String> get values => const [];
+
+  @override
+  bool evaluate(Answers answers) => answers[stepId] is SkippedAnswer;
+
+  @override
+  String describe() => '$stepId skipped';
 }
 
 final class AnswerEquals extends AnswerCondition {

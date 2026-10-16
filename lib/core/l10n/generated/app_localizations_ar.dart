@@ -236,6 +236,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tapeHint => 'اسحبي الشريط';
 
   @override
+  String get skipQuestion => 'لستُ متأكدة، تخطّي';
+
+  @override
   String get weekEyebrow => 'اكتشفي إيقاعكِ';
 
   @override
@@ -257,6 +260,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get rhythmMore => 'جلسات أكثر';
+
+  @override
+  String get bodyFront => 'الأمام';
+
+  @override
+  String get bodyBack => 'الخلف';
 
   @override
   String rhythmValue(int count) {

@@ -416,6 +416,12 @@ abstract class AppLocalizations {
   /// **'Drag the tape'**
   String get tapeHint;
 
+  /// No description provided for @skipQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m not sure, skip'**
+  String get skipQuestion;
+
   /// No description provided for @weekEyebrow.
   ///
   /// In en, this message translates to:
@@ -457,6 +463,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More sessions'**
   String get rhythmMore;
+
+  /// No description provided for @bodyFront.
+  ///
+  /// In en, this message translates to:
+  /// **'Front'**
+  String get bodyFront;
+
+  /// No description provided for @bodyBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get bodyBack;
 
   /// No description provided for @rhythmValue.
   ///

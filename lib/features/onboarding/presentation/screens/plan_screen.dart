@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:traininpink_onboarding/core/design/app_assets.dart';
 import 'package:traininpink_onboarding/core/design/tokens.dart';
 import 'package:traininpink_onboarding/core/design/widgets/entrance.dart';
 import 'package:traininpink_onboarding/core/design/widgets/pinned_footer.dart';
@@ -11,9 +12,7 @@ import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/plan_summary.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/config_icons.dart';
-
-const planImage = AssetImage('assets/images/plan.jpg');
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/config_icons.dart';
 
 /// Her plan: built from the path she took, and editable in place. Tapping
 /// an answer re-enters the flow at that question; the plan she comes back
@@ -49,7 +48,7 @@ class PlanScreen extends ConsumerWidget {
                         fit: StackFit.expand,
                         children: [
                           const Image(
-                            image: planImage,
+                            image: AppAssets.plan,
                             fit: BoxFit.cover,
                             alignment: Alignment(0, 0.6),
                           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:traininpink_onboarding/core/design/app_assets.dart';
 import 'package:traininpink_onboarding/core/design/tokens.dart';
 import 'package:traininpink_onboarding/core/design/widgets/entrance.dart';
 import 'package:traininpink_onboarding/core/design/widgets/flow_background.dart';
@@ -10,12 +11,8 @@ import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/plan_summary.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/member_card.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/member_card.dart';
 
-const successImage = AssetImage('assets/images/success.jpg');
-
-/// After subscribing: her choice is recorded, and the app speaks to her
-/// as a member now.
 class SuccessScreen extends ConsumerWidget {
   const SuccessScreen({super.key});
 
@@ -57,7 +54,7 @@ class SuccessScreen extends ConsumerWidget {
               height: height * 0.6,
               width: double.infinity,
               child: const Image(
-                image: successImage,
+                image: AppAssets.success,
                 fit: BoxFit.cover,
                 alignment: Alignment(0, -0.2),
               ),
@@ -79,6 +76,9 @@ class SuccessScreen extends ConsumerWidget {
                     index: 0,
                     child: MemberCard(
                       name: name,
+                      email: ref
+                          .watch(answerFormatterProvider)
+                          .describe('email', state.answers),
                       active: true,
                       details: [
                         plan.title.resolve(language),

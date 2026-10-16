@@ -77,6 +77,55 @@ class OnboardingController extends Notifier<OnboardingState> {
     );
   }
 
+  /// Rejected choices must not start a delayed navigation in the presentation.
+  bool selectChoice(String stepId, String optionId) {
+    if (!_isOnStep(stepId)) return false;
+    final step = _config.stepById(stepId);
+    if (step is! ChoiceStep ||
+        !step
+            .visibleOptions(state.answers)
+            .any((option) => option.id == optionId)) {
+      return false;
+    }
+    switch (step) {
+      case SingleChoiceStep():
+        answer(stepId, ChoiceAnswer(optionId));
+      case MultiChoiceStep():
+        final selected = {
+          if (state.answers[stepId] case MultiChoiceAnswer(:final optionIds))
+            ...optionIds,
+        };
+        if (!selected.remove(optionId)) selected.add(optionId);
+        answer(stepId, MultiChoiceAnswer(selected));
+    }
+    return true;
+  }
+
+  /// A skipped measurement has no saved value, so the tape previews initial.
+  int measurementValueFor(NumberStep step) => switch (state.answers[step.id]) {
+    NumberAnswer(:final value) => value,
+    _ => step.initial,
+  };
+
+  /// The tape owns fractional motion; only settled whole values are saved.
+  void recordMeasurement(String stepId, int value) {
+    if (_config.stepById(stepId) is! NumberStep) return;
+    answer(stepId, NumberAnswer(value));
+  }
+
+  void submitMeasurement(String stepId, int value) {
+    if (_config.stepById(stepId) is! NumberStep) return;
+    recordMeasurement(stepId, value);
+    continueFrom(stepId);
+  }
+
+  /// Required questions must keep their answer even if a skip intent arrives.
+  void skipStep(String stepId) {
+    if (_config.stepById(stepId)?.optional != true) return;
+    answer(stepId, const SkippedAnswer());
+    continueFrom(stepId);
+  }
+
   /// Both controls save together, so a changed routine sanitizes stale days
   /// in the same resolution. Hidden or departed pages cannot submit answers.
   void answerGroup(String pageStepId, Answers answers) {
@@ -88,6 +137,20 @@ class OnboardingController extends Notifier<OnboardingState> {
         resolution: _engine.resolve({...state.answers, ...answers}),
       ),
     );
+  }
+
+  /// Saves [value] for the step on screen and moves on, if the answer is
+  /// valid there.
+  ///
+  /// Returns false only when the answer itself is rejected, so the screen
+  /// can explain why. A stale call (a second tap on a page already left)
+  /// returns true: there is nothing for her to fix.
+  bool submit(String stepId, Answer value) {
+    if (!_isOnStep(stepId)) return true;
+    answer(stepId, value);
+    if (!state.resolution.isAnswered(stepId)) return false;
+    continueFrom(stepId);
+    return true;
   }
 
   void continueFrom(String stepId) {

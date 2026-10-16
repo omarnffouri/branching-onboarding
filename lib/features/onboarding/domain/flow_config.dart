@@ -62,6 +62,7 @@ sealed class FlowStep {
   const FlowStep({
     required this.id,
     required this.title,
+    this.optional = false,
     this.subtitle,
     this.showIf,
     this.summaryLabel,
@@ -81,6 +82,14 @@ sealed class FlowStep {
     final image = map.optionalString('image', path);
     final group = map.optionalString('group', path);
     final groupTitle = _optionalText(map, 'groupTitle', path);
+    final optional = switch (map) {
+      {'optional': final bool value} => value,
+      {'optional': _} => throw ConfigFormatException(
+        '$path.optional',
+        'expected a boolean',
+      ),
+      _ => false,
+    };
     final imageFocus = map.containsKey('imageFocus')
         ? ImageFocus.fromJson(map['imageFocus'], '$path.imageFocus')
         : ImageFocus.center;
@@ -89,6 +98,7 @@ sealed class FlowStep {
       'single' => SingleChoiceStep(
         id: id,
         title: title,
+        optional: optional,
         group: group,
         groupTitle: groupTitle,
         subtitle: subtitle,
@@ -101,6 +111,7 @@ sealed class FlowStep {
       'multi' => MultiChoiceStep(
         id: id,
         title: title,
+        optional: optional,
         group: group,
         groupTitle: groupTitle,
         subtitle: subtitle,
@@ -110,10 +121,20 @@ sealed class FlowStep {
         imageFocus: imageFocus,
         options: _options(map, path),
         minSelected: map.integer('minSelected', path, fallback: 1),
+        display: switch (map.optionalString('display', path)) {
+          null => ChoiceDisplay.list,
+          final name =>
+            ChoiceDisplay.values.asNameMap()[name] ??
+                (throw ConfigFormatException(
+                  '$path.display',
+                  'expected "list" or "body"',
+                )),
+        },
       ),
       'text' => TextInputStep(
         id: id,
         title: title,
+        optional: optional,
         group: group,
         groupTitle: groupTitle,
         subtitle: subtitle,
@@ -127,6 +148,7 @@ sealed class FlowStep {
       'number' => NumberStep(
         id: id,
         title: title,
+        optional: optional,
         group: group,
         groupTitle: groupTitle,
         subtitle: subtitle,
@@ -158,6 +180,7 @@ sealed class FlowStep {
       'frequency' => FrequencyStep(
         id: id,
         title: title,
+        optional: optional,
         group: group,
         groupTitle: groupTitle,
         subtitle: subtitle,
@@ -197,6 +220,7 @@ sealed class FlowStep {
       'info' => InfoStep(
         id: id,
         title: title,
+        optional: optional,
         group: group,
         groupTitle: groupTitle,
         subtitle: subtitle,
@@ -219,6 +243,9 @@ sealed class FlowStep {
   }
 
   final String id;
+
+  /// Skipping is a completed answer only when the config allows it.
+  final bool optional;
 
   /// Consecutive steps with the same group share a presentation page.
   final String? group;
@@ -245,10 +272,22 @@ sealed class FlowStep {
   ///
   /// This is what removes answers that no longer make sense, e.g. "5 days a
   /// week" after she changes her routine to "rarely" and that option is gone.
-  Answer? sanitize(Answer answer, Answers earlier);
+  Answer? sanitize(Answer answer, Answers earlier) {
+    // Keep this gate shared so every step type enforces the same opt-in.
+    if (answer is SkippedAnswer) return optional ? answer : null;
+    return _sanitizeAnswer(answer, earlier);
+  }
+
+  Answer? _sanitizeAnswer(Answer answer, Answers earlier);
 
   /// Parses the persisted form produced by [Answer.toJson].
-  Answer? answerFromJson(Object? json);
+  Answer? answerFromJson(Object? json) {
+    // Check the reserved marker before a text or choice parser can accept it.
+    if (json == 'skipped') return optional ? const SkippedAnswer() : null;
+    return _answerFromJson(json);
+  }
+
+  Answer? _answerFromJson(Object? json);
 
   /// Every piece of copy on this step, for language and placeholder checks.
   Iterable<LocalizedText> get texts => [
@@ -278,6 +317,7 @@ final class ChoiceOption {
     required this.label,
     this.description,
     this.showIf,
+    this.region,
   });
 
   factory ChoiceOption.fromJson(Object? json, String path) {
@@ -287,6 +327,16 @@ final class ChoiceOption {
       label: LocalizedText.fromJson(map['label'], '$path.label'),
       description: FlowStep._optionalText(map, 'description', path),
       showIf: FlowStep._optionalCondition(map, 'showIf', path),
+      region: switch (map.optionalString('region', path)) {
+        null => null,
+        final name =>
+          BodyRegion.values.asNameMap()[name] ??
+              (throw ConfigFormatException(
+                '$path.region',
+                'expected one of '
+                    '${BodyRegion.values.map((r) => r.name).join(', ')}',
+              )),
+      },
     );
   }
 
@@ -294,11 +344,20 @@ final class ChoiceOption {
   final LocalizedText label;
   final LocalizedText? description;
 
+  /// Where this option sits on the body figure of a `body` display step.
+  final BodyRegion? region;
+
   /// Options can branch too: a beginner is not offered five days a week.
   final Condition? showIf;
 
   bool isVisible(Answers answers) => showIf?.evaluate(answers) ?? true;
 }
+
+/// How a multi choice step is answered: a list of cards, or by tapping
+/// areas on a body figure that each option names with a [BodyRegion].
+enum ChoiceDisplay { list, body }
+
+enum BodyRegion { arms, belly, back, glutes, legs }
 
 /// Shared by single and multi choice steps.
 sealed class ChoiceStep extends FlowStep {
@@ -306,6 +365,7 @@ sealed class ChoiceStep extends FlowStep {
     required super.id,
     required super.title,
     required this.options,
+    super.optional,
     super.subtitle,
     super.showIf,
     super.summaryLabel,
@@ -334,6 +394,7 @@ final class SingleChoiceStep extends ChoiceStep {
     required super.id,
     required super.title,
     required super.options,
+    super.optional,
     super.subtitle,
     super.showIf,
     super.summaryLabel,
@@ -344,7 +405,7 @@ final class SingleChoiceStep extends ChoiceStep {
   });
 
   @override
-  Answer? sanitize(Answer answer, Answers earlier) => switch (answer) {
+  Answer? _sanitizeAnswer(Answer answer, Answers earlier) => switch (answer) {
     ChoiceAnswer(:final optionId)
         when visibleOptions(earlier).any((o) => o.id == optionId) =>
       answer,
@@ -352,7 +413,7 @@ final class SingleChoiceStep extends ChoiceStep {
   };
 
   @override
-  Answer? answerFromJson(Object? json) =>
+  Answer? _answerFromJson(Object? json) =>
       json is String ? ChoiceAnswer(json) : null;
 }
 
@@ -362,6 +423,8 @@ final class MultiChoiceStep extends ChoiceStep {
     required super.title,
     required super.options,
     this.minSelected = 1,
+    this.display = ChoiceDisplay.list,
+    super.optional,
     super.subtitle,
     super.showIf,
     super.summaryLabel,
@@ -372,9 +435,10 @@ final class MultiChoiceStep extends ChoiceStep {
   });
 
   final int minSelected;
+  final ChoiceDisplay display;
 
   @override
-  Answer? sanitize(Answer answer, Answers earlier) {
+  Answer? _sanitizeAnswer(Answer answer, Answers earlier) {
     if (answer is! MultiChoiceAnswer) return null;
     final visible = {for (final o in visibleOptions(earlier)) o.id};
     final kept = answer.optionIds.where(visible.contains).toList();
@@ -385,7 +449,7 @@ final class MultiChoiceStep extends ChoiceStep {
   }
 
   @override
-  Answer? answerFromJson(Object? json) => json is List<Object?>
+  Answer? _answerFromJson(Object? json) => json is List<Object?>
       ? MultiChoiceAnswer(json.whereType<String>())
       : null;
 }
@@ -419,6 +483,7 @@ final class TextInputStep extends FlowStep {
     required super.title,
     required this.kind,
     this.placeholder,
+    super.optional,
     super.subtitle,
     super.showIf,
     super.summaryLabel,
@@ -435,13 +500,13 @@ final class TextInputStep extends FlowStep {
   Iterable<LocalizedText> get texts => [...super.texts, ?placeholder];
 
   @override
-  Answer? sanitize(Answer answer, Answers earlier) => switch (answer) {
+  Answer? _sanitizeAnswer(Answer answer, Answers earlier) => switch (answer) {
     TextAnswer(:final value) when kind.accepts(value) => answer,
     _ => null,
   };
 
   @override
-  Answer? answerFromJson(Object? json) =>
+  Answer? _answerFromJson(Object? json) =>
       json is String ? TextAnswer(json) : null;
 }
 
@@ -456,6 +521,7 @@ final class NumberStep extends FlowStep {
     required this.initial,
     this.measureAt = 0.5,
     this.measureWidth,
+    super.optional,
     super.subtitle,
     super.showIf,
     super.summaryLabel,
@@ -484,13 +550,13 @@ final class NumberStep extends FlowStep {
   Iterable<LocalizedText> get texts => [...super.texts, unit];
 
   @override
-  Answer? sanitize(Answer answer, Answers earlier) => switch (answer) {
+  Answer? _sanitizeAnswer(Answer answer, Answers earlier) => switch (answer) {
     NumberAnswer(:final value) when value >= min && value <= max => answer,
     _ => null,
   };
 
   @override
-  Answer? answerFromJson(Object? json) =>
+  Answer? _answerFromJson(Object? json) =>
       json is int ? NumberAnswer(json) : null;
 }
 
@@ -505,6 +571,7 @@ final class FrequencyStep extends FlowStep {
     this.maxIf = const [],
     this.suggestedBy = const [],
     this.suggested = const {},
+    super.optional,
     super.subtitle,
     super.showIf,
     super.summaryLabel,
@@ -554,7 +621,7 @@ final class FrequencyStep extends FlowStep {
   ];
 
   @override
-  Answer? sanitize(Answer answer, Answers earlier) => switch (answer) {
+  Answer? _sanitizeAnswer(Answer answer, Answers earlier) => switch (answer) {
     NumberAnswer(:final value)
         when value >= min && value <= allowedMax(earlier) =>
       answer,
@@ -562,7 +629,7 @@ final class FrequencyStep extends FlowStep {
   };
 
   @override
-  Answer? answerFromJson(Object? json) {
+  Answer? _answerFromJson(Object? json) {
     if (json is int) return NumberAnswer(json);
     // Keep the frequency from the previous weekday picker on app upgrades.
     if (json is List<Object?> &&
@@ -620,6 +687,7 @@ final class InfoStep extends FlowStep {
     this.body,
     this.points = const [],
     this.icon,
+    super.optional,
     super.subtitle,
     super.showIf,
     super.image,
@@ -641,11 +709,11 @@ final class InfoStep extends FlowStep {
   ];
 
   @override
-  Answer? sanitize(Answer answer, Answers earlier) =>
+  Answer? _sanitizeAnswer(Answer answer, Answers earlier) =>
       answer is Acknowledged ? answer : null;
 
   @override
-  Answer? answerFromJson(Object? json) =>
+  Answer? _answerFromJson(Object? json) =>
       json == true ? const Acknowledged() : null;
 }
 

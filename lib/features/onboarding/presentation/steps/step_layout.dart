@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:traininpink_onboarding/core/design/tokens.dart';
 import 'package:traininpink_onboarding/core/design/widgets/entrance.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/flow_header.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/flow_header.dart';
 
 /// The shape every question shares: title, subtitle, content, and the call
 /// to action pinned at the bottom.

@@ -4,16 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:traininpink_onboarding/core/design/tokens.dart';
-import 'package:traininpink_onboarding/core/design/widgets/pressable.dart';
 import 'package:traininpink_onboarding/core/design/widgets/primary_button.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
 import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
+import 'package:traininpink_onboarding/features/onboarding/application/controllers/week_step_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/answer.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/flow_header.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/steps/rhythm_picker.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/flow_header.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/rhythm_picker.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/routine_selector.dart';
 
 /// The week is a pace she can sustain, rather than a calendar to fill.
 class WeekStepView extends ConsumerStatefulWidget {
@@ -26,59 +27,31 @@ class WeekStepView extends ConsumerStatefulWidget {
 }
 
 class _WeekStepViewState extends ConsumerState<WeekStepView> {
+  // The logic lives in WeekStepController; this keeps only the screen's
+  // own things: the "you've hit the limit" message and the haptics.
   var _atLimit = false;
 
-  FrequencyStep? get _frequency =>
-      widget.steps.whereType<FrequencyStep>().firstOrNull;
   String get _pageId => widget.steps.first.id;
-  OnboardingController get _controller =>
-      ref.read(onboardingControllerProvider.notifier);
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final step = _frequency;
-      final state = ref.read(onboardingControllerProvider);
-      if (step == null ||
-          state.currentStepId != _pageId ||
-          state.answers.containsKey(step.id)) {
-        return;
-      }
-      final suggested = step.suggestionFor(state.answers);
-      if (suggested != null) {
-        _controller.answerGroup(_pageId, {step.id: NumberAnswer(suggested)});
-      }
-    });
-  }
+  WeekStepController get _page =>
+      ref.read(weekStepControllerProvider(_pageId).notifier);
 
   void _selectRoutine(SingleChoiceStep step, ChoiceOption option) {
-    final state = ref.read(onboardingControllerProvider);
-    if (state.answers[step.id] == ChoiceAnswer(option.id)) return;
-    final answers = <String, Answer>{step.id: ChoiceAnswer(option.id)};
-    final frequency = _frequency;
-    final suggested = frequency?.suggestionFor({...state.answers, ...answers});
     setState(() => _atLimit = false);
-    _controller.answerGroup(_pageId, {
-      ...answers,
-      if (frequency != null && suggested != null)
-        frequency.id: NumberAnswer(suggested),
-    });
+    _page.selectRoutine(step, option);
   }
 
   void _setCount(int count) {
-    final step = _frequency!;
-    final answers = ref.read(onboardingControllerProvider).answers;
-    if (count > step.allowedMax(answers)) {
-      setState(() => _atLimit = true);
-      HapticFeedback.mediumImpact().ignore();
-      return;
+    switch (_page.setCount(count)) {
+      case FrequencyChange.changed:
+        HapticFeedback.selectionClick().ignore();
+        setState(() => _atLimit = false);
+      case FrequencyChange.overLimit:
+        HapticFeedback.mediumImpact().ignore();
+        setState(() => _atLimit = true);
+      case FrequencyChange.ignored:
+        break;
     }
-    if (count < step.min) return;
-    HapticFeedback.selectionClick().ignore();
-    setState(() => _atLimit = false);
-    _controller.answerGroup(_pageId, {step.id: NumberAnswer(count)});
   }
 
   @override
@@ -88,17 +61,13 @@ class _WeekStepViewState extends ConsumerState<WeekStepView> {
     final formatter = ref.watch(answerFormatterProvider);
     final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
-    final frequency = _frequency;
-    final count = switch (state.answers[frequency?.id]) {
-      NumberAnswer(:final value) => value,
-      _ => frequency?.suggestionFor(state.answers) ?? frequency?.min ?? 2,
-    };
+    final page = ref.watch(weekStepControllerProvider(_pageId));
+    final frequency = page.frequency;
+    final count = page.count;
+    final max = page.max;
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : AppMotion.medium;
-    final canContinue = widget.steps.every(
-      (step) => state.resolution.isAnswered(step.id),
-    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -151,14 +120,13 @@ class _WeekStepViewState extends ConsumerState<WeekStepView> {
                             style: text.bodySmall,
                           ),
                           const SizedBox(height: 8),
-                          _RoutineWords(
+                          RoutineSelector(
                             options: step.visibleOptions(state.answers),
                             selected: switch (state.answers[step.id]) {
                               ChoiceAnswer(:final optionId) => optionId,
                               _ => null,
                             },
                             language: language,
-                            duration: duration,
                             onSelected: (option) =>
                                 _selectRoutine(step, option),
                           ),
@@ -168,7 +136,7 @@ class _WeekStepViewState extends ConsumerState<WeekStepView> {
                           RhythmPicker(
                             count: count,
                             min: frequency.min,
-                            max: frequency.allowedMax(state.answers),
+                            max: max,
                             extent: heroSize,
                             onChanged: _setCount,
                           ),
@@ -179,15 +147,15 @@ class _WeekStepViewState extends ConsumerState<WeekStepView> {
                               duration: duration,
                               child: Text(
                                 _atLimit
-                                    ? l10n.weekLimit(
-                                        frequency.allowedMax(state.answers),
-                                      )
+                                    ? l10n.weekLimit(max)
                                     : frequency
                                               .countCopy(count)
                                               ?.description
                                               .resolve(language) ??
                                           '',
-                                key: ValueKey('$count:$_atLimit:$language'),
+                                key: ValueKey(
+                                  '$count:$_atLimit:$language',
+                                ),
                                 textAlign: TextAlign.center,
                                 style: text.bodyMedium!.copyWith(
                                   color: AppColors.inkMuted,
@@ -219,9 +187,7 @@ class _WeekStepViewState extends ConsumerState<WeekStepView> {
               ),
               child: PrimaryButton(
                 label: l10n.rhythmCta,
-                onPressed: canContinue
-                    ? () => _controller.continueGroup(_pageId)
-                    : null,
+                onPressed: page.canContinue ? _page.continuePage : null,
               ),
             ),
           ],
@@ -229,71 +195,4 @@ class _WeekStepViewState extends ConsumerState<WeekStepView> {
       ),
     );
   }
-}
-
-class _RoutineWords extends StatelessWidget {
-  const _RoutineWords({
-    required this.options,
-    required this.selected,
-    required this.language,
-    required this.duration,
-    required this.onSelected,
-  });
-
-  final List<ChoiceOption> options;
-  final String? selected;
-  final String language;
-  final Duration duration;
-  final ValueChanged<ChoiceOption> onSelected;
-
-  @override
-  Widget build(BuildContext context) => IntrinsicHeight(
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final option in options)
-          Expanded(
-            child: Semantics(
-              button: true,
-              selected: option.id == selected,
-              inMutuallyExclusiveGroup: true,
-              child: Pressable(
-                onTap: () => onSelected(option),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(3, 12, 3, 4),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      AnimatedDefaultTextStyle(
-                        duration: duration,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: option.id == selected
-                              ? AppColors.primaryDeep
-                              : AppColors.inkMuted,
-                          fontWeight: option.id == selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                        ),
-                        child: Text(option.label.resolve(language)),
-                      ),
-                      const SizedBox(height: 10),
-                      AnimatedContainer(
-                        duration: duration,
-                        height: 2,
-                        width: option.id == selected ? 26 : 0,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    ),
-  );
 }

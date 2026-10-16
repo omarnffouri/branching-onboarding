@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:traininpink_onboarding/core/design/app_assets.dart';
 import 'package:traininpink_onboarding/core/design/tokens.dart';
 import 'package:traininpink_onboarding/core/design/widgets/language_toggle.dart';
 import 'package:traininpink_onboarding/core/design/widgets/primary_button.dart';
@@ -10,9 +11,6 @@ import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dar
 import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/onboarding_controller.dart';
 import 'package:video_player/video_player.dart';
-
-const welcomeImage = AssetImage('assets/images/welcome.jpg');
-const _welcomeVideo = 'assets/video/welcome.mp4';
 
 /// First impression: a slow, muted, looping Pilates clip, one promise, one
 /// button.
@@ -55,7 +53,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   void _startVideo() {
     final video = VideoPlayerController.asset(
-      _welcomeVideo,
+      AppAssets.welcomeVideo,
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     );
     _video = video;
@@ -142,7 +140,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               children: [
                 if (_videoFailed || MediaQuery.disableAnimationsOf(context))
                   const Image(
-                    image: welcomeImage,
+                    image: AppAssets.welcome,
                     fit: BoxFit.cover,
                     alignment: Alignment(-0.15, 0.4),
                   ),

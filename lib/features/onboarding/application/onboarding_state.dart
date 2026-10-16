@@ -61,6 +61,12 @@ final class OnboardingState {
   final bool resumed;
 
   Answers get answers => resolution.answers;
+
+  /// Her text answer to [stepId], or '' if she hasn't given a valid one.
+  String textAnswerOf(String stepId) => switch (answers[stepId]) {
+    TextAnswer(:final value) => value,
+    _ => '',
+  };
   List<FlowStep> get path => resolution.path;
 
   int get currentIndex =>

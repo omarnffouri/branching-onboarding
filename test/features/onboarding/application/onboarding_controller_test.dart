@@ -67,6 +67,37 @@ void main() {
     expect(state().currentStepId, 'name');
   });
 
+  group('submit', () {
+    test('a valid answer is saved and moves on', () {
+      controller().start();
+
+      expect(controller().submit('name', const TextAnswer('Layla')), isTrue);
+      expect(state().currentStepId, 'goal');
+      expect(state().textAnswerOf('name'), 'Layla');
+    });
+
+    test('an invalid answer is rejected and she stays', () {
+      controller().start();
+
+      expect(controller().submit('name', const TextAnswer('')), isFalse);
+      expect(state().currentStepId, 'name');
+      expect(state().answers, isNot(contains('name')));
+    });
+
+    test('a stale second submit is not reported as a rejection', () {
+      controller().start();
+      controller().submit('name', const TextAnswer('Layla'));
+
+      expect(controller().submit('name', const TextAnswer('Layla')), isTrue);
+      expect(state().currentStepId, 'goal');
+    });
+
+    test('textAnswerOf is empty for a step without a valid text answer', () {
+      expect(state().textAnswerOf('name'), '');
+      expect(state().textAnswerOf('goal'), '');
+    });
+  });
+
   test('a double tap on Continue moves exactly one step', () {
     controller()
       ..start()
@@ -83,6 +114,138 @@ void main() {
       ..continueFrom('name');
 
     expect(state().currentStepId, 'name');
+  });
+
+  test('measurement and skip actions cannot change required text answers', () {
+    controller()
+      ..start()
+      ..answer('name', const TextAnswer('Layla'))
+      ..skipStep('name')
+      ..recordMeasurement('name', 82)
+      ..submitMeasurement('name', 82)
+      ..skipStep('missing')
+      ..recordMeasurement('missing', 82)
+      ..submitMeasurement('missing', 82);
+
+    expect(state().currentStepId, 'name');
+    expect(state().answers['name'], const TextAnswer('Layla'));
+  });
+
+  group('measurement actions', () {
+    void openWaist() {
+      controller().start();
+      answerAndContinue(const TextAnswer('Layla'));
+      answerAndContinue(const ChoiceAnswer('feel_lighter'));
+      answerAndContinue(const Acknowledged());
+      expect(state().currentStepId, 'waist');
+    }
+
+    NumberStep waistStep() =>
+        state().path.firstWhere((step) => step.id == 'waist') as NumberStep;
+
+    test(
+      'recording saves a measurement without advancing and survives resume',
+      () {
+        openWaist();
+        final step = waistStep();
+        expect(controller().measurementValueFor(step), step.initial);
+        controller().recordMeasurement('waist', 82);
+
+        expect(state().currentStepId, 'waist');
+        expect(state().answers['waist'], const NumberAnswer(82));
+        expect(controller().measurementValueFor(step), 82);
+        container = createContainer(store: store);
+        expect(state().currentStepId, 'waist');
+        expect(controller().measurementValueFor(step), 82);
+      },
+    );
+
+    test('submit validates the measurement and advances only once', () {
+      openWaist();
+      controller()
+        ..recordMeasurement('waist', 82)
+        ..submitMeasurement('waist', waistStep().max + 1);
+      expect(state().currentStepId, 'waist');
+      expect(state().answers, isNot(contains('waist')));
+
+      controller()
+        ..submitMeasurement('waist', 84)
+        ..submitMeasurement('waist', 90);
+      expect(state().currentStepId, 'current_training');
+      expect(state().answers['waist'], const NumberAnswer(84));
+    });
+
+    test('skipping completes the step once and resumes at the next page', () {
+      openWaist();
+      final step = waistStep();
+      final progress = state().progress;
+      controller()
+        ..skipStep('waist')
+        ..skipStep('waist')
+        ..recordMeasurement('waist', 90)
+        ..submitMeasurement('waist', 90);
+
+      expect(state().currentStepId, 'current_training');
+      expect(state().resolution.isAnswered('waist'), isTrue);
+      expect(state().progress, greaterThan(progress));
+      expect(controller().measurementValueFor(step), step.initial);
+      expect(
+        store.progress!['answers']! as Map<String, Object?>,
+        containsPair('waist', 'skipped'),
+      );
+
+      container = createContainer(store: store);
+      expect(state().currentStepId, 'current_training');
+      expect(state().answers['waist'], const SkippedAnswer());
+    });
+
+    test(
+      'returning to a skipped measurement submits initial as a real value',
+      () {
+        openWaist();
+        final step = waistStep();
+        controller()
+          ..skipStep('waist')
+          ..backFromStep('current_training');
+        expect(state().currentStepId, 'waist');
+        expect(controller().measurementValueFor(step), step.initial);
+
+        controller().submitMeasurement(
+          'waist',
+          controller().measurementValueFor(step),
+        );
+        expect(state().answers['waist'], NumberAnswer(step.initial));
+        expect(state().currentStepId, 'current_training');
+      },
+    );
+
+    test('a skipped waist leaves the plan complete after save and restore', () {
+      controller().start();
+      finishQuestions({
+        'goal': const ChoiceAnswer('feel_lighter'),
+        'waist': const SkippedAnswer(),
+      });
+      controller().finishBuilding();
+      container = createContainer(store: store);
+
+      expect(state().stage, OnboardingStage.plan);
+      expect(state().resolution.isComplete, isTrue);
+      expect(state().answers['waist'], const SkippedAnswer());
+    });
+
+    test('a saved skip on a required step is dropped and revisited', () {
+      openWaist();
+      final savedAnswers = store.progress!['answers']! as Map<String, Object?>;
+      store.progress = {
+        ...?store.progress,
+        'answers': {...savedAnswers, 'goal': 'skipped'},
+      };
+      container = createContainer(store: store);
+
+      expect(state().currentStepId, 'goal');
+      expect(state().answers, isNot(contains('goal')));
+      expect(state().answers, isNot(contains('waist')));
+    });
   });
 
   test('going back keeps the answer she is still on', () {

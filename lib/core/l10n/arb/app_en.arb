@@ -90,6 +90,7 @@
   "nameExamples": "Layla,Noura,Sara,Mariam",
   "@nameExamples": { "description": "Comma-separated first names typed as an animated placeholder." },
   "tapeHint": "Drag the tape",
+  "skipQuestion": "I'm not sure, skip",
   "weekEyebrow": "FIND YOUR RHYTHM",
   "weekLimit": "Let's start with {max} sessions. You can add more later.",
   "@weekLimit": {
@@ -104,6 +105,8 @@
   "rhythmCta": "This feels right",
   "rhythmLess": "Fewer sessions",
   "rhythmMore": "More sessions",
+  "bodyFront": "Front",
+  "bodyBack": "Back",
   "rhythmValue": "{count} sessions a week",
   "@rhythmValue": {
     "placeholders": {

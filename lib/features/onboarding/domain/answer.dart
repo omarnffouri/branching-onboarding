@@ -91,6 +91,23 @@ final class NumberAnswer extends Answer {
   String toString() => 'NumberAnswer($value)';
 }
 
+/// An explicit choice to move on, so an optional question still completes.
+final class SkippedAnswer extends Answer {
+  const SkippedAnswer();
+
+  @override
+  Object toJson() => 'skipped';
+
+  @override
+  bool operator ==(Object other) => other is SkippedAnswer;
+
+  @override
+  int get hashCode => (SkippedAnswer).hashCode;
+
+  @override
+  String toString() => 'SkippedAnswer()';
+}
+
 /// She has seen an info screen and moved on.
 final class Acknowledged extends Answer {
   const Acknowledged();

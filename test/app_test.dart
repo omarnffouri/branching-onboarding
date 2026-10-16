@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:traininpink_onboarding/app.dart';
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/config_icons.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/widgets/config_icons.dart';
 
 import 'helpers/config_fixtures.dart';
 import 'helpers/fakes.dart';

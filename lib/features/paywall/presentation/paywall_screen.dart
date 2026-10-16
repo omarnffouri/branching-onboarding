@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:traininpink_onboarding/core/design/app_assets.dart';
 import 'package:traininpink_onboarding/core/design/tokens.dart';
 import 'package:traininpink_onboarding/core/design/widgets/choice_card.dart';
 import 'package:traininpink_onboarding/core/design/widgets/entrance.dart';
@@ -12,8 +13,6 @@ import 'package:traininpink_onboarding/features/onboarding/application/onboardin
 import 'package:traininpink_onboarding/features/onboarding/application/providers.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
 import 'package:traininpink_onboarding/features/paywall/presentation/price_format.dart';
-
-const paywallImage = AssetImage('assets/images/paywall.jpg');
 
 /// Plans come from the config. The selected plan is unmistakable, the
 /// button says exactly what will happen, and a trial explains itself with
@@ -53,7 +52,7 @@ class PaywallScreen extends ConsumerWidget {
                         fit: StackFit.expand,
                         children: [
                           const Image(
-                            image: paywallImage,
+                            image: AppAssets.paywall,
                             fit: BoxFit.cover,
                             alignment: Alignment(0, 0.45),
                           ),

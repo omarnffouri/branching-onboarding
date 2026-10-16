@@ -71,21 +71,34 @@ flowchart LR
   ui["Step screens"] -- "answer / continueFrom(stepId) / backFromStep(stepId)" --> ctrl
 ```
 
+### Project structure
+
+Feature-first, with one rule per folder, so every file has one obvious home:
+
 ```
 lib/
-├── main.dart                 load + validate config, open storage, run
-├── app.dart                  MaterialApp, theme per language, config error screen
+├── main.dart                   load + validate config, open storage, run
+├── app.dart                    MaterialApp, theme per language, config error screen
 ├── core/
-│   ├── design/               tokens, theme, shared widgets (cards, CTA, progress…)
-│   └── l10n/                 ARB files for app chrome, language controller
+│   ├── design/                 tokens, theme, AppAssets (every image/video path), focus mixin
+│   │   └── widgets/            generic UI any app could use: button, card, pressable, motion
+│   └── l10n/                   ARB files for app chrome, language controller
 └── features/
     ├── onboarding/
-    │   ├── domain/           pure Dart: config models, conditions, FlowEngine, validator
-    │   ├── data/             config loader, progress store
-    │   ├── application/      OnboardingController, state, plan summary, analytics
-    │   └── presentation/     flow shell, one screen per step *type*, plan, inspector
-    └── paywall/presentation/ paywall, success, price formatting
+    │   ├── domain/             the rules, pure Dart (no Flutter): config, conditions, FlowEngine, validator
+    │   ├── data/               config loader, progress store
+    │   ├── application/        state and logic, no widgets
+    │   │   │                   OnboardingController owns the flow: answers, navigation, saving
+    │   │   └── controllers/    one logic controller per page type (choice, text, tape, week)
+    │   └── presentation/
+    │       ├── screens/        whole pages: welcome, building, plan, flow shell
+    │       ├── steps/          one view per step type + the shared step layout;
+    │       │                   views keep only UI (animation, timers, haptics)
+    │       └── widgets/        onboarding pieces: header, member card, tape, rhythm picker, body map…
+    └── paywall/presentation/   paywall, success, price formatting
 ```
+
+`test/` mirrors `lib/`.
 
 **The rule that keeps branching safe:** the path is never stored. `FlowEngine.resolve(answers)` walks the config once. A step joins the path if its `showIf` holds against the answers *already kept*, and its own answer is kept only if it is still valid there. A stale answer can never steer the flow, and it is dropped from the result. `ConfigValidator` guarantees conditions only look *backwards*, so one pass is always enough and cycles are impossible.
 
@@ -256,7 +269,7 @@ At that point she has invested a few minutes, told us what matters to her, and j
 
 ## Credits
 
-- Photos from [Unsplash](https://unsplash.com) under the Unsplash License: Roxana Popovici (plan, days a week, fallback welcome), Sẹ́gun Toríọlá (paywall; the orange backdrop was moved onto our palette with Apple Vision person segmentation, the woman untouched, see `tool/recolor_background.swift`), Look Studio (success), bruce mars (goal), Hunter Leibler (last trained), Vitaly Gariev (injury), rajat sarki (postnatal), Glenna Haug (feel lighter), Alireza Skndari (routine), Jessica Streser (focus areas), Dane Wetton (session length).
+- Photos from [Unsplash](https://unsplash.com) under the Unsplash License: Roxana Popovici (plan, fallback welcome), Sẹ́gun Toríọlá (paywall; the orange backdrop was moved onto our palette with Apple Vision person segmentation, the woman untouched, see `tool/recolor_background.swift`), Look Studio (success), bruce mars (goal), Vitaly Gariev (injury), rajat sarki (postnatal), Glenna Haug (feel lighter), Dane Wetton (session length).
 - Waist render: a 3D image generated with AI for this project.
 - Welcome video from [Pexels](https://www.pexels.com/video/woman-stretching-in-a-kneeling-position-4608976/) under the Pexels License.
 - Fonts: [Poppins](https://fonts.google.com/specimen/Poppins) and [IBM Plex Sans Arabic](https://fonts.google.com/specimen/IBM+Plex+Sans+Arabic) under the SIL Open Font License (licence texts in `assets/fonts/`).

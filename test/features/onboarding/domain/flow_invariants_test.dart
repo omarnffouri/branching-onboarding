@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:traininpink_onboarding/features/onboarding/application/plan_summary.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/answer.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/answer_formatter.dart';
 import 'package:traininpink_onboarding/features/onboarding/domain/flow_config.dart';
@@ -20,35 +21,35 @@ void main() {
   T pick<T>(List<T> items, Random random) =>
       items[random.nextInt(items.length)];
 
-  Answer randomAnswer(FlowStep step, Answers answers, Random random) =>
-      switch (step) {
-        SingleChoiceStep() => ChoiceAnswer(
-          pick(step.visibleOptions(answers), random).id,
-        ),
-        MultiChoiceStep() => MultiChoiceAnswer(
-          (step.visibleOptions(answers).map((o) => o.id).toList()
-                ..shuffle(random))
-              .take(
-                step.minSelected +
-                    random.nextInt(
-                      step.visibleOptions(answers).length -
-                          step.minSelected +
-                          1,
-                    ),
-              ),
-        ),
-        TextInputStep(kind: TextInputKind.email) => TextAnswer(
-          'member${random.nextInt(1000)}@example.com',
-        ),
-        TextInputStep() => TextAnswer(pick(['Layla', 'Noura', 'Sara'], random)),
-        NumberStep(:final min, :final max) => NumberAnswer(
-          min + random.nextInt(max - min + 1),
-        ),
-        FrequencyStep(:final min) => NumberAnswer(
-          min + random.nextInt(step.allowedMax(answers) - min + 1),
-        ),
-        InfoStep() => const Acknowledged(),
-      };
+  Answer randomAnswer(FlowStep step, Answers answers, Random random) {
+    if (step.optional && random.nextBool()) return const SkippedAnswer();
+    return switch (step) {
+      SingleChoiceStep() => ChoiceAnswer(
+        pick(step.visibleOptions(answers), random).id,
+      ),
+      MultiChoiceStep() => MultiChoiceAnswer(
+        (step.visibleOptions(answers).map((o) => o.id).toList()
+              ..shuffle(random))
+            .take(
+              step.minSelected +
+                  random.nextInt(
+                    step.visibleOptions(answers).length - step.minSelected + 1,
+                  ),
+            ),
+      ),
+      TextInputStep(kind: TextInputKind.email) => TextAnswer(
+        'member${random.nextInt(1000)}@example.com',
+      ),
+      TextInputStep() => TextAnswer(pick(['Layla', 'Noura', 'Sara'], random)),
+      NumberStep(:final min, :final max) => NumberAnswer(
+        min + random.nextInt(max - min + 1),
+      ),
+      FrequencyStep(:final min) => NumberAnswer(
+        min + random.nextInt(step.allowedMax(answers) - min + 1),
+      ),
+      InfoStep() => const Acknowledged(),
+    };
+  }
 
   void expectSafe(FlowResolution resolution) {
     final ids = resolution.path.map((s) => s.id).toList();
@@ -56,6 +57,10 @@ void main() {
     // No stale answers: everything she has answered is on her path.
     for (final stepId in resolution.answers.keys) {
       expect(ids, contains(stepId), reason: 'stale answer to $stepId');
+      if (resolution.answers[stepId] is SkippedAnswer) {
+        expect(config.stepById(stepId)!.optional, isTrue);
+        expect(resolution.isAnswered(stepId), isTrue);
+      }
     }
 
     // Resolving is stable: doing it again changes nothing.
@@ -91,6 +96,16 @@ void main() {
     ];
     for (final language in config.languages) {
       final formatter = AnswerFormatter(config, language);
+      final summary = PlanSummary.build(config, resolution, language);
+      for (final MapEntry(:key, :value) in answers.entries) {
+        if (value is SkippedAnswer) {
+          expect(formatter.describe(key, answers), isNull);
+          expect(
+            summary.answers.map((row) => row.stepId),
+            isNot(contains(key)),
+          );
+        }
+      }
       for (final text in shown) {
         for (final placeholder in placeholdersIn(text)) {
           expect(
@@ -117,6 +132,8 @@ void main() {
   test('1,000 random members: no dead ends, no stale answers', () {
     final random = Random(20261015);
     final pathsSeen = <String>{};
+    var skippedWaists = 0;
+    var measuredWaists = 0;
 
     for (var member = 0; member < 1000; member++) {
       var answers = <String, Answer>{};
@@ -155,6 +172,14 @@ void main() {
       final finished = engine.resolve(answers);
       expect(finished.isComplete, isTrue);
       expectCompletePlan(finished);
+      switch (finished.answers['waist']) {
+        case SkippedAnswer():
+          skippedWaists++;
+        case NumberAnswer():
+          measuredWaists++;
+        case _:
+          break;
+      }
       pathsSeen.add(finished.path.map((s) => s.id).join('>'));
     }
 
@@ -162,5 +187,7 @@ void main() {
     // lymphatic explainer, and getting back into it plain, after an injury
     // and after a baby.
     expect(pathsSeen, hasLength(5));
+    expect(skippedWaists, greaterThan(0));
+    expect(measuredWaists, greaterThan(0));
   });
 }

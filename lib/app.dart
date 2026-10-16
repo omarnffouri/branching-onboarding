@@ -4,7 +4,7 @@ import 'package:traininpink_onboarding/core/design/app_theme.dart';
 import 'package:traininpink_onboarding/core/design/tokens.dart';
 import 'package:traininpink_onboarding/core/l10n/generated/app_localizations.dart';
 import 'package:traininpink_onboarding/core/l10n/language_controller.dart';
-import 'package:traininpink_onboarding/features/onboarding/presentation/onboarding_flow.dart';
+import 'package:traininpink_onboarding/features/onboarding/presentation/screens/onboarding_flow.dart';
 
 class TraininpinkApp extends ConsumerWidget {
   const TraininpinkApp({super.key});

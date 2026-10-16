@@ -231,6 +231,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tapeHint => 'Drag the tape';
 
   @override
+  String get skipQuestion => 'I\'m not sure, skip';
+
+  @override
   String get weekEyebrow => 'FIND YOUR RHYTHM';
 
   @override
@@ -252,6 +255,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rhythmMore => 'More sessions';
+
+  @override
+  String get bodyFront => 'Front';
+
+  @override
+  String get bodyBack => 'Back';
 
   @override
   String rhythmValue(int count) {
